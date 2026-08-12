@@ -1,11 +1,12 @@
 /**
  * Types for the virtual routes module.
  *
- * Reference this from the app's env declarations:
- *   /// <reference path="./plugin/client.d.ts" />
+ * Consumers reference this by package:
+ *   /// <reference types="vite-react-file-router/client" />
  *
- * Once the plugin ships as a package this becomes:
- *   /// <reference types="@travistrue2008/vite-react-file-router/client" />
+ * This repo consumes the plugin from source rather than from node_modules, so
+ * it references the file directly instead:
+ *   /// <reference path="./plugin/client.d.ts" />
  */
 declare module 'virtual:file-router/routes.jsx' {
   import type { createBrowserRouter } from 'react-router'

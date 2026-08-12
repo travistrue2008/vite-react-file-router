@@ -29,9 +29,14 @@ bun install
 bun run dev        # vite dev server on http://localhost:5173
 bun test           # unit + generation + integration suites
 bun run typecheck  # tsc --noEmit
-bun run build      # static build to dist/
-bun run preview    # serve the production build
+bun run build      # the published library: tsc → dist/, then copies 404.jsx + client.d.ts
 ```
+
+`build` produces the published package and nothing else — `dist/` is what `files` points at. It
+uses `tsconfig.build.json`, which re-enables emit on top of the typecheck-only root config.
+
+There is deliberately no build for the demo app. The demo exists to exercise the plugin under
+`bun run dev`; it is never distributed, so nothing bundles it.
 
 ## The plugin
 

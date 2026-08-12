@@ -1,0 +1,26 @@
+// Emits the publishable library from `src/plugin` into `dist`.
+//
+// The root tsconfig is typecheck-only (`noEmit`, `allowImportingTsExtensions`),
+// so this config turns emit back on. `rewriteRelativeImportExtensions` is what
+// makes that legal: the plugin's relative imports carry explicit `.ts`
+// extensions to satisfy Vite's native config loader, and this rewrites them to
+// `.js` on the way out.
+//
+// `404.jsx` and `client.d.ts` are not emitted by tsc — the build script copies
+// them verbatim. See the `build` script.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "rewriteRelativeImportExtensions": true,
+    "outDir": "dist",
+    "rootDir": "src/plugin",
+    "lib": ["ESNext"],
+    "types": ["node"]
+  },
+  "include": ["src/plugin/**/*.ts"],
+  "exclude": ["src/plugin/client.d.ts"]
+}
