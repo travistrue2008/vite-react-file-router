@@ -28,21 +28,22 @@ export type RouteTree = {
  * Resolves `<dir>/<base>.{tsx,jsx}`, preferring `.tsx`. Warns when both exist,
  * since only one of them can ever render.
  */
-function resolveComponent(dirPath: string, base: string): string | undefined {
+function resolveComponent (dirPath: string, base: string): string | undefined {
   const found = EXTENSIONS.map((ext) => join(dirPath, `${base}.${ext}`)).filter(
     (candidate) => existsSync(candidate),
   )
 
   if (found.length > 1) {
     console.warn(
-      `[vite-react-file-router] ${found[1]} is shadowed by ${found[0]} and will be ignored`,
+      `[vite-react-file-router] ${found[1]} is shadowed by ${found[0]} ` +
+        'and will be ignored',
     )
   }
 
   return found[0]
 }
 
-function scanDirectory(
+function scanDirectory (
   dirPath: string,
   segments: string[],
   segment: string,
@@ -52,7 +53,9 @@ function scanDirectory(
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort()
-    .map((name) => scanDirectory(join(dirPath, name), [...segments, name], name))
+    .map(
+      (name) => scanDirectory(join(dirPath, name), [...segments, name], name),
+    )
 
   return {
     segment,
@@ -64,8 +67,10 @@ function scanDirectory(
   }
 }
 
-/** Walks `inputDir` into a route tree. Throws if the directory doesn't exist. */
-export function scan(inputDir: string): RouteTree {
+/**
+ * Walks `inputDir` into a route tree. Throws if the directory doesn't exist.
+ */
+export function scan (inputDir: string): RouteTree {
   if (!existsSync(inputDir) || !statSync(inputDir).isDirectory()) {
     throw new Error(
       `[vite-react-file-router] inputPath does not exist: ${inputDir}`,
@@ -80,6 +85,6 @@ export function scan(inputDir: string): RouteTree {
 }
 
 /** Depth-first walk in the same order the generated imports are emitted. */
-export function walk(node: RouteNode): RouteNode[] {
+export function walk (node: RouteNode): RouteNode[] {
   return [node, ...node.children.flatMap(walk)]
 }

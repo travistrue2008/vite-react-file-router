@@ -24,7 +24,10 @@ const routesFile = join(root, 'src/routes.jsx')
 let server: ViteDevServer
 
 beforeAll(async () => {
-  rmSync(uploadsDir, { recursive: true, force: true })
+  rmSync(uploadsDir, {
+    recursive: true,
+    force: true,
+  })
 
   server = await createServer({
     root,
@@ -39,12 +42,17 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await server?.close()
-  rmSync(uploadsDir, { recursive: true, force: true })
+
+  rmSync(uploadsDir, {
+    recursive: true,
+    force: true,
+  })
+
   rmSync(routesFile, { force: true })
 })
 
 /** Waits for the debounced regeneration to settle, or gives up. */
-async function waitFor(predicate: () => boolean, timeoutMs = 4000) {
+async function waitFor (predicate: () => boolean, timeoutMs = 4000) {
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
@@ -58,7 +66,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 4000) {
 const routes = () => readFileSync(routesFile, 'utf8')
 const routesContain = (text: string) => () => routes().includes(text)
 
-test('a new directory with no Page leaves the last good routes in place', async () => {
+test('a new directory with no Page keeps the last good routes', async () => {
   const before = routes()
 
   mkdirSync(uploadsDir, { recursive: true })
@@ -80,16 +88,18 @@ test('a Page with no default export still leaves them in place', async () => {
 
 // The regression: only a `change` event fires here, so the plugin used to sit
 // on the stale error and never pick the fix up.
-test('editing that file to add a default export regenerates the routes', async () => {
+test('adding the default export back regenerates the routes', async () => {
   writeFileSync(
     uploadsPage,
     'export default function Page() { return <div>Uploads</div> }\n',
   )
 
   expect(await waitFor(routesContain('Uploads_Page'))).toBe(true)
+
   expect(routes()).toContain(
     "import Uploads_Page from './components/app/uploads/Page'",
   )
+
   expect(routes()).toContain("path: 'uploads',")
 })
 
@@ -97,12 +107,15 @@ test('editing that file to add a default export regenerates the routes', async (
 // the app actually imports — so it has to have picked the new route up too.
 test('the virtual module reflects the same change', async () => {
   const module = await server.ssrLoadModule(VIRTUAL_ROUTES_ID)
-  const paths = module.default.routes[0].children.map((child: any) => child.path)
+
+  const paths = module.default.routes[0].children.map(
+    (child: { path?: string }) => child.path,
+  )
 
   expect(paths).toContain('uploads')
 })
 
-test('breaking the default export again keeps the last good routes', async () => {
+test('breaking the default export again keeps the routes', async () => {
   const before = routes()
 
   writeFileSync(uploadsPage, 'export default 42\n')
@@ -113,7 +126,10 @@ test('breaking the default export again keeps the last good routes', async () =>
 })
 
 test('removing the directory drops the route', async () => {
-  rmSync(uploadsDir, { recursive: true, force: true })
+  rmSync(uploadsDir, {
+    recursive: true,
+    force: true,
+  })
 
   expect(await waitFor(() => !routesContain('Uploads_Page')())).toBe(true)
 })

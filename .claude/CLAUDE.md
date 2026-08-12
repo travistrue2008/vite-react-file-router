@@ -29,8 +29,21 @@ bun install
 bun run dev        # vite dev server on http://localhost:5173
 bun test           # unit + generation + integration suites
 bun run typecheck  # tsc --noEmit
+bun run lint       # eslint .
+bun run lint:fix   # eslint . --fix
 bun run build      # the published library: tsc → dist/, then copies 404.jsx + client.d.ts
 ```
+
+ESLint is the only style authority — there is no Prettier, and the formatting is enforced by
+ESLint's own core rules. `eslint.config.mjs` mirrors `sleepy-serv`'s: an explicit rule list, no
+recommended presets, and no type-aware linting, so it stays fast and predictable.
+
+Two version pins in `package.json` are load-bearing. `eslint` is pinned to `9.20.1` because ESLint
+10 **removed** every core formatting rule this config is built from (`indent`, `quotes`, `semi`,
+`max-len`, `comma-dangle`, …) and hard-errors on unknown rule ids rather than degrading; moving to
+10 means adopting `@stylistic/eslint-plugin`, not bumping a version. `typescript` is held at
+`^5.9.3` because `typescript-eslint@8` peer-requires `<6.1.0`. Don't "upgrade everything" without
+reading this paragraph.
 
 `build` produces the published package and nothing else — `dist/` is what `files` points at. It
 uses `tsconfig.build.json`, which re-enables emit on top of the typecheck-only root config.
@@ -69,6 +82,12 @@ Load-bearing details:
   full-reload instead of hot-updating.
 - Relative imports inside `src/plugin` carry explicit `.ts` extensions, required by Vite's native
   config loader.
+- `BANNER` in `generate.ts` and the invalid-`default`-export message in `validate.ts` are string
+  concatenations split **only** to fit the 80-column limit. Independent copies live in
+  `tests/generate/generate.test.ts`, `tests/unit/validate.test.ts`, and the README, and
+  `generate.test.ts` matches `outputPath must not be inside inputPath` as one phrase. Re-split
+  those lines freely; never reword the text, and never let a seam fall inside an asserted
+  substring.
 
 ## Demo app
 
@@ -107,7 +126,11 @@ in `vite.config.ts`.
 
 ## Conventions
 
-- No semicolons, single quotes, two-space indent, trailing commas.
+- No semicolons, single quotes, two-space indent, trailing commas, a space before named-function
+  parens (`function scan (dir)`), and an 80-column hard limit. `eslint.config.mjs` enforces all of
+  it — run `bun run lint:fix` rather than hand-formatting.
+- `any` is an error. The single exception is the rolldown AST alias in `validate.ts`, which carries
+  an inline disable and a comment explaining why `unknown` would be worse.
 - Comments explain *why* — the non-obvious constraint, not the mechanics. Match the existing density.
 - Errors and warnings are prefixed `[vite-react-file-router]`.
 - Only `src/plugin` may use `node:fs` / `node:path`; keep the demo app browser-only.

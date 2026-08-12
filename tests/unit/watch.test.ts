@@ -3,24 +3,38 @@ import { shouldRegenerate, WATCH_EVENTS } from '../../src/plugin/index.ts'
 
 const inputDir = '/app/src/components/app'
 
+/** A content edit to `file` inside a route directory. */
+const onChange = (file: string) =>
+  shouldRegenerate('change', `${inputDir}/uploads/${file}`, inputDir)
+
 describe('shouldRegenerate', () => {
   test('ignores anything outside inputPath', () => {
     for (const event of WATCH_EVENTS) {
-      expect(shouldRegenerate(event, '/app/src/routes.jsx', inputDir)).toBe(false)
-      expect(shouldRegenerate(event, '/app/vite.config.ts', inputDir)).toBe(false)
+      const routes = shouldRegenerate(event, '/app/src/routes.jsx', inputDir)
+      const config = shouldRegenerate(event, '/app/vite.config.ts', inputDir)
+
+      expect(routes).toBe(false)
+      expect(config).toBe(false)
     }
   })
 
   test('any structural event reshapes the tree', () => {
     for (const event of ['add', 'unlink', 'addDir', 'unlinkDir'] as const) {
-      expect(shouldRegenerate(event, `${inputDir}/uploads`, inputDir)).toBe(true)
-      expect(shouldRegenerate(event, `${inputDir}/uploads/notes.md`, inputDir)).toBe(
-        true,
+      const dir = shouldRegenerate(event, `${inputDir}/uploads`, inputDir)
+
+      const file = shouldRegenerate(
+        event,
+        `${inputDir}/uploads/notes.md`,
+        inputDir,
       )
+
+      expect(dir).toBe(true)
+      expect(file).toBe(true)
     }
   })
 
-  // Validation reads these files, so their contents can flip the build's outcome.
+  // Validation reads these files, so their contents can flip the build's
+  // outcome.
   test.each([
     'Page.tsx',
     'Page.jsx',
@@ -29,9 +43,7 @@ describe('shouldRegenerate', () => {
     '404.tsx',
     '404.jsx',
   ])('a content edit to %s regenerates', (file) => {
-    expect(shouldRegenerate('change', `${inputDir}/uploads/${file}`, inputDir)).toBe(
-      true,
-    )
+    expect(onChange(file)).toBe(true)
   })
 
   // Everything else is Fast Refresh's job, and re-parsing the tree on every
@@ -44,8 +56,6 @@ describe('shouldRegenerate', () => {
     'MyLayout.tsx',
     'Page.md',
   ])('a content edit to %s does not', (file) => {
-    expect(shouldRegenerate('change', `${inputDir}/uploads/${file}`, inputDir)).toBe(
-      false,
-    )
+    expect(onChange(file)).toBe(false)
   })
 })

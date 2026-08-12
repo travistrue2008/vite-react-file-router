@@ -255,8 +255,13 @@ bun install
 bun dev          # http://localhost:5173
 bun test
 bun run typecheck
+bun run lint     # eslint . — `bun run lint:fix` to autofix
 bun run build    # the published library
 ```
+
+Style is enforced entirely by ESLint's core formatting rules — there is no Prettier. `eslint`
+stays pinned to `9.20.1` (ESLint 10 removed those rules) and `typescript` to `^5.9.3` (which is
+what `typescript-eslint@8` supports); both are dev-only and neither affects the published package.
 
 ### Layout
 

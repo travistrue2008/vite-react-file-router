@@ -2,10 +2,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-export const PAGE_SOURCE = 'export default function Page() {\n  return null\n}\n'
+export const PAGE_SOURCE =
+  'export default function Page() {\n  return null\n}\n'
 
 export const LAYOUT_SOURCE =
-  "import { Outlet } from 'react-router'\n\nexport default function Layout() {\n  return <Outlet />\n}\n"
+  "import { Outlet } from 'react-router'\n\n" +
+  'export default function Layout() {\n  return <Outlet />\n}\n'
 
 /**
  * A fixture app tree. Keys are paths relative to `src/components/app`; a key
@@ -14,13 +16,17 @@ export const LAYOUT_SOURCE =
  */
 export type Files = Record<string, string> | string[]
 
-function normalize(files: Files): Record<string, string> {
+function normalize (files: Files): Record<string, string> {
   if (!Array.isArray(files)) return files
 
   return Object.fromEntries(
     files.map((path) => [
       path,
-      path.endsWith('/') ? '' : path.includes('Layout') ? LAYOUT_SOURCE : PAGE_SOURCE,
+      path.endsWith('/')
+        ? ''
+        : path.includes('Layout')
+          ? LAYOUT_SOURCE
+          : PAGE_SOURCE,
     ]),
   )
 }
@@ -35,7 +41,7 @@ export type Fixture = {
 }
 
 /** Materializes a fixture app in a temp directory and removes it afterwards. */
-export function withFixture<T>(files: Files, run: (fixture: Fixture) => T): T {
+export function withFixture<T> (files: Files, run: (fixture: Fixture) => T): T {
   const root = mkdtempSync(join(tmpdir(), 'file-router-'))
   const inputDir = join(root, 'src', 'components', 'app')
 
@@ -54,9 +60,16 @@ export function withFixture<T>(files: Files, run: (fixture: Fixture) => T): T {
   }
 
   try {
-    return run({ root, inputDir, outputFile: join(root, 'src', 'routes.jsx') })
+    return run({
+      root,
+      inputDir,
+      outputFile: join(root, 'src', 'routes.jsx'),
+    })
   } finally {
-    rmSync(root, { recursive: true, force: true })
+    rmSync(root, {
+      recursive: true,
+      force: true,
+    })
   }
 }
 
@@ -64,7 +77,7 @@ export function withFixture<T>(files: Files, run: (fixture: Fixture) => T): T {
  * Replaces the plugin's own 404 import, whose path is relative to wherever the
  * repo happens to live, with a stable token.
  */
-export function stabilize(source: string): string {
+export function stabilize (source: string): string {
   return source.replace(
     /^import NotFoundPage from '.*\/plugin\/404'$/m,
     "import NotFoundPage from '<built-in-404>'",

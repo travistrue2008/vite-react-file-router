@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { importName, isDynamicSegment, pascalCase } from '../../src/plugin/naming'
+import {
+  importName,
+  isDynamicSegment,
+  pascalCase,
+} from '../../src/plugin/naming'
 
 describe('pascalCase', () => {
   test.each([
@@ -39,14 +43,17 @@ describe('importName', () => {
   })
 
   test('kind is the suffix', () => {
-    expect(importName(['users', ':userId'], 'Layout')).toBe('Users__UserId_Layout')
+    expect(importName(['users', ':userId'], 'Layout'))
+      .toBe('Users__UserId_Layout')
   })
 
   // The spec's own example block lists four spellings collapsing to one name.
   // The generator can't emit that, so validate.ts has to reject it.
   test('all four spellings of a segment collide', () => {
-    const names = ['last_week', 'last-week', 'lastWeek', 'LastWeek'].map((segment) =>
-      importName(['blog', segment], 'Page'),
+    const spellings = ['last_week', 'last-week', 'lastWeek', 'LastWeek']
+
+    const names = spellings.map(
+      (segment) => importName(['blog', segment], 'Page'),
     )
 
     expect(new Set(names).size).toBe(1)

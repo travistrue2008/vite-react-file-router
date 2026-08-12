@@ -4,7 +4,7 @@ import { validate } from '../../src/plugin/validate'
 import { LAYOUT_SOURCE, PAGE_SOURCE, withFixture } from '../helpers'
 
 /** Runs validation over a fixture and returns the aggregated error message. */
-function errorFor(files: Parameters<typeof withFixture>[0]): string {
+function errorFor (files: Parameters<typeof withFixture>[0]): string {
   return withFixture(files, ({ root, inputDir }) => {
     try {
       validate(scan(inputDir), root)
@@ -18,7 +18,10 @@ function errorFor(files: Parameters<typeof withFixture>[0]): string {
 
 describe('leaf-Page requirement', () => {
   test('a leaf directory without a Page is an error', () => {
-    expect(errorFor({ 'users/Page.tsx': PAGE_SOURCE, 'users/:userId/': '' })).toBe(
+    expect(errorFor({
+      'users/Page.tsx': PAGE_SOURCE,
+      'users/:userId/': '',
+    })).toBe(
       '[Error] src/components/app/users/:userId: Page.{jsx|tsx} not found',
     )
   })
@@ -76,7 +79,10 @@ describe('import name collisions', () => {
 
   test('Page and Layout in one directory do not collide', () => {
     expect(
-      errorFor({ 'Layout.tsx': LAYOUT_SOURCE, 'Page.tsx': PAGE_SOURCE }),
+      errorFor({
+        'Layout.tsx': LAYOUT_SOURCE,
+        'Page.tsx': PAGE_SOURCE,
+      }),
     ).toBe('')
   })
 })
@@ -87,20 +93,26 @@ describe('default export validation', () => {
     'anonymous function': 'export default function () { return null }',
     'arrow function': 'export default () => null',
     'class component':
-      "import { Component } from 'react'\nexport default class Page extends Component {}",
-    'memo call': "import { memo } from 'react'\nexport default memo(() => null)",
+      "import { Component } from 'react'\n" +
+      'export default class Page extends Component {}',
+    'memo call':
+      "import { memo } from 'react'\nexport default memo(() => null)",
     'React.forwardRef call':
-      "import React from 'react'\nexport default React.forwardRef(() => null)",
+      "import React from 'react'\n" +
+      'export default React.forwardRef(() => null)',
     'identifier bound to a function':
       'function Page() { return null }\nexport default Page',
-    'identifier bound to an arrow': 'const Page = () => null\nexport default Page',
+    'identifier bound to an arrow':
+      'const Page = () => null\nexport default Page',
     'identifier bound to an import':
       "import Page from './elsewhere'\nexport default Page",
     'named default specifier':
       'function Page() { return null }\nexport { Page as default }',
     're-exported default': "export { default } from './elsewhere'",
     'typed component':
-      'type Props = { id: string }\nexport default function Page({ id }: Props) { return <div>{id}</div> }',
+      'type Props = { id: string }\n' +
+      'export default function Page({ id }: Props) ' +
+      '{ return <div>{id}</div> }',
   }
 
   test.each(Object.entries(accepted))('accepts %s', (_label, source) => {
@@ -118,7 +130,8 @@ describe('default export validation', () => {
 
   test.each(Object.entries(rejected))('rejects %s', (_label, source) => {
     expect(errorFor({ 'Page.tsx': source })).toBe(
-      '[Error] src/components/app/Page.tsx: `default` export is not a valid React component',
+      '[Error] src/components/app/Page.tsx: ' +
+        '`default` export is not a valid React component',
     )
   })
 
@@ -139,9 +152,13 @@ describe('default export validation', () => {
 
   test('validates the app 404 too', () => {
     expect(
-      errorFor({ 'Page.tsx': PAGE_SOURCE, '404.tsx': 'export default 42' }),
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        '404.tsx': 'export default 42',
+      }),
     ).toBe(
-      '[Error] src/components/app/404.tsx: `default` export is not a valid React component',
+      '[Error] src/components/app/404.tsx: ' +
+        '`default` export is not a valid React component',
     )
   })
 })

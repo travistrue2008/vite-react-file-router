@@ -9,7 +9,7 @@ import fileRouter, {
  * Boots a real Vite dev server over a fixture app with the plugin installed,
  * exactly as a consuming project would configure it.
  */
-export function startServer(
+export function startServer (
   root: string,
   options: FileRouterOptions = {},
 ): Promise<ViteDevServer> {
@@ -18,12 +18,15 @@ export function startServer(
     configFile: false,
     logLevel: 'silent',
     plugins: [fileRouter(options), react()],
-    server: { middlewareMode: true, watch: null },
+    server: {
+      middlewareMode: true,
+      watch: null,
+    },
   })
 }
 
 /** Loads the virtual routes module the app would import. */
-export async function loadRouter(server: ViteDevServer) {
+export async function loadRouter (server: ViteDevServer) {
   const module = await server.ssrLoadModule(VIRTUAL_ROUTES_ID)
 
   return module.default

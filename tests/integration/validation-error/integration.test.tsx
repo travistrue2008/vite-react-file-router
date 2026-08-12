@@ -8,7 +8,10 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 const ordersDir = join(root, 'src/components/app/orders/:orderId')
 
 afterEach(() => {
-  rmSync(join(root, 'src/components/app/orders'), { recursive: true, force: true })
+  rmSync(join(root, 'src/components/app/orders'), {
+    recursive: true,
+    force: true,
+  })
 })
 
 // Created here rather than checked in, because git cannot track an empty

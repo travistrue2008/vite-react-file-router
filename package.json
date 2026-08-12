@@ -42,6 +42,8 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/plugin/404.jsx src/plugin/client.d.ts dist/",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
@@ -61,11 +63,14 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6",
+    "eslint": "9.20.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "happy-dom": "^20.11.2",
     "react": "^19",
     "react-dom": "^19",
     "react-router": "^8.3.0",
-    "typescript": "^7.0.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.66.0",
     "vite": "^8"
   }
 }

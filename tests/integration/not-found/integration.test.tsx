@@ -1,14 +1,14 @@
 import { afterAll, afterEach, beforeAll, expect, test } from 'bun:test'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { fileURLToPath } from 'node:url'
-import { RouterProvider } from 'react-router'
+import { RouterProvider, type createBrowserRouter } from 'react-router'
 import type { ViteDevServer } from 'vite'
 import { loadRouter, startServer } from '../server'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 
 let server: ViteDevServer
-let router: any
+let router: ReturnType<typeof createBrowserRouter>
 
 beforeAll(async () => {
   server = await startServer(root)
@@ -23,7 +23,7 @@ afterAll(async () => {
   await server?.close()
 })
 
-async function renderAt(path: string) {
+async function renderAt (path: string) {
   render(<RouterProvider router={router} />)
 
   await act(async () => {

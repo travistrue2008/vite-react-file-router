@@ -12,8 +12,10 @@
 
 const SEPARATORS = /[-_\s]+/
 
-/** Splits on separators *and* camelCase boundaries, then capitalizes each part. */
-export function pascalCase(input: string): string {
+/**
+ * Splits on separators *and* camelCase boundaries, then capitalizes each part.
+ */
+export function pascalCase (input: string): string {
   return input
     .split(SEPARATORS)
     .flatMap((part) => part.replace(/([a-z0-9])([A-Z])/g, '$1\0$2').split('\0'))
@@ -23,11 +25,11 @@ export function pascalCase(input: string): string {
 }
 
 /** A `:`-prefixed directory is a dynamic route param; the colon becomes `_`. */
-export function isDynamicSegment(segment: string): boolean {
+export function isDynamicSegment (segment: string): boolean {
   return segment.startsWith(':')
 }
 
-function segmentToIdentifierPart(segment: string): string {
+function segmentToIdentifierPart (segment: string): string {
   return isDynamicSegment(segment)
     ? `_${pascalCase(segment.slice(1))}`
     : pascalCase(segment)
@@ -39,7 +41,7 @@ function segmentToIdentifierPart(segment: string): string {
  * `segments` is the directory path relative to `inputPath`, so the root route
  * directory passes `[]` and yields a bare `Page` / `Layout`.
  */
-export function importName(
+export function importName (
   segments: readonly string[],
   kind: 'Page' | 'Layout',
 ): string {

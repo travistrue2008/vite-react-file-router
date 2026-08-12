@@ -12,9 +12,10 @@ import type { RouteTree } from './scan.ts'
  * The module the app imports.
  *
  * Two things about this id are load-bearing. It ends in `.jsx` so
- * `@vitejs/plugin-react` transforms the JSX it contains, and it is deliberately
- * *not* prefixed with `\0` — plugin-react filters null-byte ids out, which would
- * leave raw JSX to reach `vite:import-analysis` and fail the request.
+ * `@vitejs/plugin-react` transforms the JSX it contains, and it is
+ * deliberately *not* prefixed with `\0` — plugin-react filters null-byte ids
+ * out, which would leave raw JSX to reach `vite:import-analysis` and fail the
+ * request.
  */
 export const VIRTUAL_ROUTES_ID = 'virtual:file-router/routes.jsx'
 
@@ -53,7 +54,7 @@ const ROUTE_COMPONENT = /(?:^|[/\\])(?:Page|Layout|404)\.(?:tsx|jsx)$/
  * export is validated. Without that, fixing a bad export would emit only a
  * `change` event and the plugin would never retry.
  */
-export function shouldRegenerate(
+export function shouldRegenerate (
   event: WatchEvent,
   path: string,
   inputDir: string,
@@ -67,7 +68,7 @@ export function shouldRegenerate(
  * Generates the `react-router` config from the route component directory tree,
  * so the file structure is the single source of truth for the app's routes.
  */
-export default function fileRouter(options: FileRouterOptions = {}): Plugin {
+export default function fileRouter (options: FileRouterOptions = {}): Plugin {
   const { inputPath = DEFAULT_INPUT_PATH, outputPath } = options
 
   let root = process.cwd()
@@ -81,7 +82,10 @@ export default function fileRouter(options: FileRouterOptions = {}): Plugin {
    * events don't change them, and reloading anyway would cost Fast Refresh.
    */
   const rebuild = () => {
-    const tree = buildRouteTree({ root, inputPath })
+    const tree = buildRouteTree({
+      root,
+      inputPath,
+    })
 
     if (outputFile) writeRoutesFile(tree, outputFile)
 
@@ -90,32 +94,40 @@ export default function fileRouter(options: FileRouterOptions = {}): Plugin {
 
     source = next
 
-    return { source: next, changed }
+    return {
+      source: next,
+      changed,
+    }
   }
 
   return {
     name: 'vite-react-file-router',
     enforce: 'pre',
 
-    configResolved(config) {
+    configResolved (config) {
       root = config.root
+
       // Also validates that outputPath doesn't sit inside the watched tree.
-      ;({ inputDir, outputFile } = resolvePaths({ root, inputPath, outputPath }))
+      ;({ inputDir, outputFile } = resolvePaths({
+        root,
+        inputPath,
+        outputPath,
+      }))
     },
 
     // Validating here rather than in load() means a broken tree fails the dev
     // server at startup and fails `vite build`, instead of surfacing later as a
     // module error on whichever request happens to import the routes first.
-    buildStart() {
+    buildStart () {
       rebuild()
     },
 
-    resolveId(id) {
+    resolveId (id) {
       // Returned unchanged — see VIRTUAL_ROUTES_ID on why there's no `\0`.
       if (id === VIRTUAL_ROUTES_ID) return VIRTUAL_ROUTES_ID
     },
 
-    load(id) {
+    load (id) {
       if (id !== VIRTUAL_ROUTES_ID) return
 
       // Imports here are absolute: a virtual module has no directory of its own
@@ -123,7 +135,7 @@ export default function fileRouter(options: FileRouterOptions = {}): Plugin {
       return source ?? rebuild().source
     },
 
-    configureServer(server: ViteDevServer) {
+    configureServer (server: ViteDevServer) {
       let timer: ReturnType<typeof setTimeout> | undefined
       let failed = false
 
@@ -133,18 +145,20 @@ export default function fileRouter(options: FileRouterOptions = {}): Plugin {
         try {
           const { changed } = rebuild()
 
-          // Nothing else can reload a virtual module, so it has to happen here —
-          // but only when the routes really changed, or when clearing a stale
-          // error overlay. Otherwise a Page edit would reload instead of
+          // Nothing else can reload a virtual module, so it has to happen
+          // here — but only when the routes really changed, or when clearing a
+          // stale error overlay. Otherwise a Page edit would reload instead of
           // hot-updating.
           if (!changed && !failed) return
 
           // Each environment caches the module separately, and the SSR graph
-          // matters as much as the client one — that's what ssrLoadModule reads.
+          // matters as much as the client one — that's what ssrLoadModule
+          // reads.
           for (const environment of Object.values(server.environments)) {
-            const module = environment.moduleGraph.getModuleById(VIRTUAL_ROUTES_ID)
+            const graph = environment.moduleGraph
+            const module = graph.getModuleById(VIRTUAL_ROUTES_ID)
 
-            if (module) environment.moduleGraph.invalidateModule(module)
+            if (module) graph.invalidateModule(module)
           }
 
           failed = false
@@ -156,9 +170,13 @@ export default function fileRouter(options: FileRouterOptions = {}): Plugin {
 
           failed = true
           server.config.logger.error(err.message, { timestamp: true })
+
           server.ws.send({
             type: 'error',
-            err: { message: err.message, stack: '' },
+            err: {
+              message: err.message,
+              stack: '',
+            },
           })
         }
       }

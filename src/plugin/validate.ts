@@ -7,10 +7,14 @@ import { walk, type RouteNode, type RouteTree } from './scan.ts'
 /** Wrappers whose return value is still a valid React component. */
 const COMPONENT_WRAPPERS = new Set(['memo', 'forwardRef', 'lazy'])
 
+// rolldown exports no node type for the AST `parseSync` returns. Every read
+// below is guarded on `type` first, so a structural alias is the honest shape —
+// `unknown` would only add a cast at each of those reads.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Node = Record<string, any>
 
 /** Everything that can appear as a `default` export and still render. */
-function isComponentExpression(node: Node | null | undefined): boolean {
+function isComponentExpression (node: Node | null | undefined): boolean {
   if (!node) return false
 
   switch (node.type) {
@@ -24,6 +28,7 @@ function isComponentExpression(node: Node | null | undefined): boolean {
     // memo(...) / forwardRef(...) / React.memo(...) / React.forwardRef(...)
     case 'CallExpression': {
       const callee = node.callee
+
       const name =
         callee?.type === 'MemberExpression'
           ? callee.property?.name
@@ -41,7 +46,7 @@ function isComponentExpression(node: Node | null | undefined): boolean {
  * Resolves a module-scope binding to its initializer. Returns `true` when the
  * binding is an import, since what it points at can't be known statically.
  */
-function resolvesToComponent(body: Node[], name: string): boolean {
+function resolvesToComponent (body: Node[], name: string): boolean {
   for (const statement of body) {
     const node =
       statement.type === 'ExportNamedDeclaration' && statement.declaration
@@ -49,7 +54,8 @@ function resolvesToComponent(body: Node[], name: string): boolean {
         : statement
 
     if (
-      (node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') &&
+      (node.type === 'FunctionDeclaration' ||
+        node.type === 'ClassDeclaration') &&
       node.id?.name === name
     ) {
       return true
@@ -73,7 +79,7 @@ function resolvesToComponent(body: Node[], name: string): boolean {
   return false
 }
 
-function exportedName(specifier: Node): string | undefined {
+function exportedName (specifier: Node): string | undefined {
   return specifier.exported?.name ?? specifier.exported?.value
 }
 
@@ -82,12 +88,16 @@ type DefaultExport =
   | { kind: 'invalid' }
   | { kind: 'valid' }
 
-function inspectDefaultExport(source: string, filePath: string): DefaultExport {
+function inspectDefaultExport (
+  source: string,
+  filePath: string,
+): DefaultExport {
   const { program, errors } = parseSync(filePath, source)
 
   if (errors.length > 0) {
     throw new Error(
-      `[vite-react-file-router] failed to parse ${filePath}: ${errors[0]?.message ?? 'unknown error'}`,
+      `[vite-react-file-router] failed to parse ${filePath}: ` +
+        `${errors[0]?.message ?? 'unknown error'}`,
     )
   }
 
@@ -131,7 +141,7 @@ function inspectDefaultExport(source: string, filePath: string): DefaultExport {
  * Enforces every structural requirement in one pass, collecting *all* failures
  * so a broken tree reports everything at once instead of one error per run.
  */
-export function validate(tree: RouteTree, root: string): void {
+export function validate (tree: RouteTree, root: string): void {
   const errors: string[] = []
   const display = (target: string) => relative(root, target) || '.'
   const nodes = walk(tree.root)
@@ -171,13 +181,17 @@ export function validate(tree: RouteTree, root: string): void {
 
   // 3. Every component file must default-export something renderable.
   for (const filePath of componentFiles(tree)) {
-    const result = inspectDefaultExport(readFileSync(filePath, 'utf8'), filePath)
+    const source = readFileSync(filePath, 'utf8')
+    const result = inspectDefaultExport(source, filePath)
 
     if (result.kind === 'missing') {
       errors.push(`[Error] ${display(filePath)}: has no \`default\` export`)
     } else if (result.kind === 'invalid') {
+      // Split only to fit the line limit — tests/unit/validate.test.ts and the
+      // README both carry this message verbatim.
       errors.push(
-        `[Error] ${display(filePath)}: \`default\` export is not a valid React component`,
+        `[Error] ${display(filePath)}: ` +
+          '`default` export is not a valid React component',
       )
     }
   }
@@ -185,7 +199,7 @@ export function validate(tree: RouteTree, root: string): void {
   if (errors.length > 0) throw new Error(errors.join('\n'))
 }
 
-function componentFiles(tree: RouteTree): string[] {
+function componentFiles (tree: RouteTree): string[] {
   const files = walk(tree.root).flatMap((node: RouteNode) =>
     [node.layout, node.page].filter((file): file is string => Boolean(file)),
   )
