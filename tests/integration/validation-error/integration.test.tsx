@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { startServer } from '../server'
+import { loadRouter, startServer } from '../server'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 const ordersDir = join(root, 'src/components/app/orders/:orderId')
@@ -29,9 +29,13 @@ test('a Page-less leaf directory fails the dev server at startup', async () => {
   await promise.then((server) => server.close()).catch(() => {})
 })
 
+// Loads the virtual module rather than the `outputPath` debug artifact: this
+// server is started without an `outputPath`, so no file is written, and
+// `routes.jsx` is gitignored anyway — reading one would only ever find a stale
+// leftover from a previous run.
 test('the same tree starts cleanly once the Page exists', async () => {
   const server = await startServer(root)
 
-  await expect(server.ssrLoadModule('/src/routes.jsx')).resolves.toBeDefined()
+  await expect(loadRouter(server)).resolves.toBeDefined()
   await server.close()
 })
