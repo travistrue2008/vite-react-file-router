@@ -1,4 +1,4 @@
-# react-router-file-router
+# vite-react-file-router
 
 A Vite plugin that generates a configured instance of [`react-router`](https://reactrouter.com)'s _Browser Router_ from your project's component directory tree, making the file structure is the single source of truth for your app's routes.
 
@@ -8,7 +8,7 @@ src/components/app/users/            →  /users
 src/components/app/users/:userId/    →  /users/123
 ```
 
-The plugin lives in [`src/plugin`](src/plugin). The rest of the repo is a small React app that uses it, plus the test suite. It will eventually ship as `vite-react-file-router`.
+The plugin lives in [`src/plugin`](src/plugin). The rest of the repo is a small React app that uses it, plus the test suite.
 
 ---
 
@@ -34,7 +34,7 @@ npm install vite-react-file-router
 ```ts
 // vite.config.ts
 import react from '@vitejs/plugin-react'
-import fileRouter from './src/plugin/index.ts'
+import fileRouter from 'vite-react-file-router'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
@@ -60,7 +60,7 @@ TypeScript needs to know about the virtual module. Reference the shipped declara
 ```ts
 // src/vite-env.d.ts
 /// <reference types="vite/client" />
-/// <reference path="./plugin/client.d.ts" />
+/// <reference types="vite-react-file-router/client" />
 ```
 
 ### Options
@@ -255,7 +255,7 @@ bun install
 bun dev          # http://localhost:5173
 bun test
 bun run typecheck
-bun run build && bun run preview
+bun run build    # the published library
 ```
 
 ### Layout
@@ -281,10 +281,16 @@ Inside the plugin:
 
 Generation fixtures are built in temp directories rather than checked in, because several cases hinge on *empty* directories, which git cannot track. Integration fixtures are checked in and live under the repo so bare specifiers like `react-router` resolve.
 
-### Notes for extraction
+### Packaging
 
-When this moves to its own package:
+`bun run build` produces the published library and nothing else:
 
-- `react`, `react-router`, and `vite` belong in `peerDependencies` — `react-router` is never imported by the plugin, only emitted into generated code, and a duplicate copy would break router context. `react-dom` is not needed.
-- `rolldown` belongs in `dependencies`. It is the plugin's only third-party runtime import (Vite 8 dropped esbuild, and Vite's own `parseAst` can't parse TSX), and it currently resolves only because the package manager hoists Vite's copy.
-- Relative imports inside `src/plugin` carry explicit `.ts` extensions to satisfy Vite's native config loader; these become `.js` once compiled.
+```bash
+bun run build   # tsc -p tsconfig.build.json → dist/, then copies 404.jsx and client.d.ts
+```
+
+The demo app has no build. It exists to exercise the plugin under `bun run dev` and is never
+distributed, so there is nothing to bundle. A few details of the library build are load-bearing:
+
+- `react`, `react-router`, and `vite` are `peerDependencies`. `react-router` is never imported by the plugin, only emitted into generated code, and a duplicate copy would break router context.
+- `404.jsx` ships uncompiled and keeps its name, because `generate.ts` resolves it relative to `import.meta.url` — the same expression has to work from `src/plugin` and from `dist`.
