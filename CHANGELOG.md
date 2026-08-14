@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dynamic-segment directories now use a leading `$` instead of `:` (e.g.
+  `users/$userId`), matching the convention used by frameworks like Remix.
+  `react-router`'s own path syntax is unchanged and still uses `:userId`.
+
 ## [0.1.0] - 2026-08-12
 
 ### Added
@@ -14,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vite plugin that generates a `createBrowserRouter` config from the component
   directory tree, exposed as the virtual module
   `virtual:file-router/routes.jsx`.
-- `Page` and `Layout` conventions per route directory, with `$param` directories
+- `Page` and `Layout` conventions per route directory, with `:param` directories
   becoming dynamic segments.
 - Optional app-defined `404.{tsx,jsx}` at the root of `inputPath`, falling back
   to a built-in one.
