@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-12
+
 ### Added
 
 - Vite plugin that generates a `createBrowserRouter` config from the component
@@ -23,3 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   component edits, and keeps serving the last good routes when validation fails.
 - `outputPath` option that writes the same routes to disk as a debug artifact.
 - `client` types entry declaring the virtual module for TypeScript.
+
+[Unreleased]: https://github.com/travistrue2008/vite-react-file-router/compare/0.1.0...HEAD
+[0.1.0]: https://github.com/travistrue2008/vite-react-file-router/releases/tag/0.1.0
