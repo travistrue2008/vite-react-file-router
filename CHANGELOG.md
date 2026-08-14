@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-14
+
 ### Changed
 
 - Dynamic-segment directories now use a leading `$` instead of `:` (e.g.
@@ -32,5 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `outputPath` option that writes the same routes to disk as a debug artifact.
 - `client` types entry declaring the virtual module for TypeScript.
 
-[Unreleased]: https://github.com/travistrue2008/vite-react-file-router/compare/0.1.0...HEAD
 [0.1.0]: https://github.com/travistrue2008/vite-react-file-router/releases/tag/0.1.0
+[Unreleased]: https://github.com/travistrue2008/vite-react-file-router/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/travistrue2008/vite-react-file-router/compare/0.1.0...0.2.0
