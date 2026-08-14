@@ -29,11 +29,11 @@ Here are some examples on how the file structure maps to possible routes:
 |-------------------------------------|---------------------------------------------|
 | `src/components/app`                | `/` (root route)                            |
 | `src/components/app/users`          | `/users`                                    |
-| `src/components/app/users/:userId`  | `/users/123`                                |
+| `src/components/app/users/$userId`  | `/users/123`                                |
 
 Notes
 - Only directories define route segemnts; not files themselves
-- The `/:userId` directory is a dynamic route param. Directories that start with a colon (`:`) are dynamic route params
+- The `/$userId` directory is a dynamic route param. Directories that start with a dollar sign (`$`) are dynamic route params
 
 ## Page Component Resolution
 
@@ -45,7 +45,7 @@ For example:
 |---------------|---------------------------------------------|
 | `/`           | `src/component/app/Page.tsx`                |
 | `/users`      | `src/component/app/users/Page.tsx`          |
-| `/users/123`  | `src/component/app/users/:userId/Page.tsx`  |
+| `/users/123`  | `src/component/app/users/$userId/Page.tsx`  |
 
 ### Default Exports
 
@@ -67,18 +67,18 @@ Here's an example of a directory structure that should throw an error:
     + /photos
         - Page.tsx
     + /users
-        + /:userId
+        + /$userId
 ```
 
 - `/app` doesn't require `Page.{jsx|tsx}` inside of it because it has sub-directories: `/users` and `/photos`, therefore it doesn't cause an error
 - `/app/photos` requires `Page.{jsx|tsx}` since it also doesn't contain any sub-directories, but it fulfills that requirement by having `Page.{jsx|tsx}`
-- `/app/users/:userId` causes an error because it doesn't have any sub-directories, or `Page.{jsx|tsx}` in it
+- `/app/users/$userId` causes an error because it doesn't have any sub-directories, or `Page.{jsx|tsx}` in it
 
 ### Handling 404 Cases
 
 If the browser navigates to a route that maps to a valid directory with no `Page.{jsx|tsx}` inside of it, then the app attempts to render the `default` export from `src/components/app/404.{jsx|tsx}`, if it exists. If the app doesn't define `src/components/app/404.{jsx|tsx}`, then the `vite` plugin will provide its own default `404` component.
 
-So, if the current app URI is: `/users/123` then the router will render `src/components/app/users/:userId/Page.{jsx|tsx}` if it exists, and it'd render it inside of any matched `Layout` components that may exist.
+So, if the current app URI is: `/users/123` then the router will render `src/components/app/users/$userId/Page.{jsx|tsx}` if it exists, and it'd render it inside of any matched `Layout` components that may exist.
 
 The `vite` plugin will come with its own `404.jsx`
 
@@ -95,7 +95,7 @@ Here are some specs on how to generate code:
   - Directory names can be in either `snake_case`, `kabab-case` `camelCase`, or `PascalCase`
   - Convert each directory name into `PascalCase`
   - Replace the path's slashes with underscores (`_`)
-  - Directories representing dynamic route params replace their starting with a colon (`:`) with an underscore (`_`)
+  - Directories representing dynamic route params replace their starting with a dollar sign (`$`) with an underscore (`_`)
 - Import the `Layout` before the `Page` for directories that contain both
 
 Here's a block of code containing multiple examples:
@@ -103,15 +103,15 @@ Here's a block of code containing multiple examples:
 ```tsx
 import Page from 'Page'
 import Users_Page from 'users/Page'
-import Users__UserId_Page from 'users/:userId/Page'
+import Users__UserId_Page from 'users/$userId/Page'
 import Blog_LastWeek from 'blog/last_week'
 import Blog_LastWeek from 'blog/last-week'
 import Blog_LastWeek from 'blog/lastWeek'
 import Blog_LastWeek from 'blog/LastWeek'
-import Blog__LastWeek from 'blog/:last_week'
-import Blog__LastWeek from 'blog/:last-week'
-import Blog__LastWeek from 'blog/:lastWeek'
-import Blog__LastWeek from 'blog/:LastWeek'
+import Blog__LastWeek from 'blog/$last_week'
+import Blog__LastWeek from 'blog/$last-week'
+import Blog__LastWeek from 'blog/$lastWeek'
+import Blog__LastWeek from 'blog/$LastWeek'
 ```
 
 ## Generation Use-Cases

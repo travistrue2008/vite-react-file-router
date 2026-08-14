@@ -5,7 +5,7 @@ import { join } from 'node:path'
 const EXTENSIONS = ['tsx', 'jsx'] as const
 
 export type RouteNode = {
-  /** Directory name verbatim, e.g. `users` or `:userId`. Empty for the root. */
+  /** Directory name verbatim, e.g. `users` or `$userId`. Empty for the root. */
   segment: string
   /** Directory path relative to `inputPath`, split into segments. */
   segments: string[]

@@ -21,7 +21,7 @@ describe('pascalCase', () => {
 })
 
 test('recognizes dynamic segments', () => {
-  expect(isDynamicSegment(':userId')).toBe(true)
+  expect(isDynamicSegment('$userId')).toBe(true)
   expect(isDynamicSegment('users')).toBe(false)
 })
 
@@ -33,17 +33,17 @@ describe('importName', () => {
 
   test.each([
     [['users'], 'Users_Page'],
-    [['users', ':userId'], 'Users__UserId_Page'],
+    [['users', '$userId'], 'Users__UserId_Page'],
     [['blog', 'last_week'], 'Blog_LastWeek_Page'],
-    [['blog', ':last-week'], 'Blog__LastWeek_Page'],
-    [['blog', ':lastWeek'], 'Blog__LastWeek_Page'],
-    [['blog', ':LastWeek'], 'Blog__LastWeek_Page'],
+    [['blog', '$last-week'], 'Blog__LastWeek_Page'],
+    [['blog', '$lastWeek'], 'Blog__LastWeek_Page'],
+    [['blog', '$LastWeek'], 'Blog__LastWeek_Page'],
   ])('%s -> %s', (segments, expected) => {
     expect(importName(segments, 'Page')).toBe(expected)
   })
 
   test('kind is the suffix', () => {
-    expect(importName(['users', ':userId'], 'Layout'))
+    expect(importName(['users', '$userId'], 'Layout'))
       .toBe('Users__UserId_Layout')
   })
 
