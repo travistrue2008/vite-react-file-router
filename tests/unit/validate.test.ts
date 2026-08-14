@@ -20,9 +20,9 @@ describe('leaf-Page requirement', () => {
   test('a leaf directory without a Page is an error', () => {
     expect(errorFor({
       'users/Page.tsx': PAGE_SOURCE,
-      'users/:userId/': '',
+      'users/$userId/': '',
     })).toBe(
-      '[Error] src/components/app/users/:userId: Page.{jsx|tsx} not found',
+      '[Error] src/components/app/users/$userId: Page.{jsx|tsx} not found',
     )
   })
 
@@ -45,19 +45,19 @@ describe('leaf-Page requirement', () => {
   })
 
   test('a directory with sub-directories needs no Page', () => {
-    expect(errorFor({ 'users/:userId/Page.tsx': PAGE_SOURCE })).toBe('')
+    expect(errorFor({ 'users/$userId/Page.tsx': PAGE_SOURCE })).toBe('')
   })
 
   test('every failure is reported at once', () => {
     const message = errorFor({
       'photos/Page.tsx': PAGE_SOURCE,
-      'users/:userId/': '',
+      'users/$userId/': '',
       'orders/': '',
     })
 
     expect(message.split('\n')).toEqual([
       '[Error] src/components/app/orders: Page.{jsx|tsx} not found',
-      '[Error] src/components/app/users/:userId: Page.{jsx|tsx} not found',
+      '[Error] src/components/app/users/$userId: Page.{jsx|tsx} not found',
     ])
   })
 })

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { importName } from './naming.ts'
+import { importName, isDynamicSegment } from './naming.ts'
 import { scan, type RouteNode, type RouteTree } from './scan.ts'
 import { validate } from './validate.ts'
 
@@ -67,6 +67,11 @@ function line (depth: number, text: string): string {
   return INDENT.repeat(depth) + text
 }
 
+/** react-router's path syntax uses `:name`, not the directory's `$name`. */
+function routeSegment (segment: string): string {
+  return isDynamicSegment(segment) ? `:${segment.slice(1)}` : segment
+}
+
 /**
  * Emits one route object.
  *
@@ -82,7 +87,9 @@ function renderRoute (
   const lines: string[] = [line(depth, '{')]
   const body = depth + 1
 
-  lines.push(line(body, `path: '${isRoot ? '/' : node.segment}',`))
+  lines.push(
+    line(body, `path: '${isRoot ? '/' : routeSegment(node.segment)}',`),
+  )
 
   if (node.layout) {
     const layout = importName(node.segments, 'Layout')

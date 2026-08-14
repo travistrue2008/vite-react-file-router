@@ -2,12 +2,12 @@
  * Import-identifier generation.
  *
  * A directory path relative to `inputPath` becomes a PascalCase identifier:
- * segments are individually PascalCased and joined with `_`, and a leading `:`
+ * segments are individually PascalCased and joined with `_`, and a leading `$`
  * on a dynamic-param segment becomes a leading `_`.
  *
  *   users            -> Users_Page
- *   users/:userId    -> Users__UserId_Page
- *   blog/:last-week  -> Blog__LastWeek_Layout
+ *   users/$userId    -> Users__UserId_Page
+ *   blog/$last-week  -> Blog__LastWeek_Layout
  */
 
 const SEPARATORS = /[-_\s]+/
@@ -24,9 +24,9 @@ export function pascalCase (input: string): string {
     .join('')
 }
 
-/** A `:`-prefixed directory is a dynamic route param; the colon becomes `_`. */
+/** A `$`-prefixed directory is a dynamic route param; the `$` becomes `_`. */
 export function isDynamicSegment (segment: string): boolean {
-  return segment.startsWith(':')
+  return segment.startsWith('$')
 }
 
 function segmentToIdentifierPart (segment: string): string {

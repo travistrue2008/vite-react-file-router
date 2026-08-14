@@ -211,10 +211,10 @@ export default createBrowserRouter([
 
   // Both `/` and `/users` are Page-less, so each gets its own index 404.
   test('Nested Route (Page-Only)', () => {
-    expect(sourceFor(['users/:userId/Page.tsx'])).toBe(
+    expect(sourceFor(['users/$userId/Page.tsx'])).toBe(
       `${HEADER}
 import NotFoundPage from '<built-in-404>'
-import Users__UserId_Page from './components/app/users/:userId/Page'
+import Users__UserId_Page from './components/app/users/$userId/Page'
 
 export default createBrowserRouter([
   {
@@ -255,13 +255,13 @@ export default createBrowserRouter([
 
   test('Nested Route (Page and Layout)', () => {
     const source = sourceFor([
-      'users/:userId/Layout.tsx',
-      'users/:userId/Page.tsx',
+      'users/$userId/Layout.tsx',
+      'users/$userId/Page.tsx',
     ])
 
     const layoutImport =
       'import Users__UserId_Layout from ' +
-      "'./components/app/users/:userId/Layout'"
+      "'./components/app/users/$userId/Layout'"
 
     expect(source).toContain(layoutImport)
 
@@ -273,8 +273,8 @@ export default createBrowserRouter([
   test('Nested Route (Page and Layout with Parent Route)', () => {
     const source = sourceFor([
       'users/Page.tsx',
-      'users/:userId/Layout.tsx',
-      'users/:userId/Page.tsx',
+      'users/$userId/Layout.tsx',
+      'users/$userId/Page.tsx',
     ])
 
     // `/users` has a Page now, so the only 404s are the root index and the
@@ -294,8 +294,8 @@ export default createBrowserRouter([
         'Page.tsx',
         'users/Layout.tsx',
         'users/Page.tsx',
-        'users/:userId/Layout.tsx',
-        'users/:userId/Page.tsx',
+        'users/$userId/Layout.tsx',
+        'users/$userId/Page.tsx',
       ]),
     ).toBe(
       `${HEADER}
@@ -304,8 +304,8 @@ import Layout from './components/app/Layout'
 import Page from './components/app/Page'
 import Users_Layout from './components/app/users/Layout'
 import Users_Page from './components/app/users/Page'
-import Users__UserId_Layout from './components/app/users/:userId/Layout'
-import Users__UserId_Page from './components/app/users/:userId/Page'
+import Users__UserId_Layout from './components/app/users/$userId/Layout'
+import Users__UserId_Page from './components/app/users/$userId/Page'
 
 export default createBrowserRouter([
   {
@@ -384,8 +384,8 @@ describe('use-cases that are now errors', () => {
     ],
     [
       'Nested Route (Layout-Only)',
-      ['users/:userId/Layout.tsx'],
-      'src/components/app/users/:userId',
+      ['users/$userId/Layout.tsx'],
+      'src/components/app/users/$userId',
     ],
   ])('%s', (_label, files, dir) => {
     expect(errorFor(files)).toBe(`[Error] ${dir}: Page.{jsx|tsx} not found`)
@@ -421,7 +421,7 @@ describe('virtual vs file rendering', () => {
   })
 
   test('only the import specifiers differ', () => {
-    const files = ['Layout.tsx', 'Page.tsx', 'users/:userId/Page.tsx']
+    const files = ['Layout.tsx', 'Page.tsx', 'users/$userId/Page.tsx']
 
     const strip = (source: string) =>
       source
