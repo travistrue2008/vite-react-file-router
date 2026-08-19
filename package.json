@@ -3,7 +3,7 @@
   "name": "vite-react-file-router",
   "description": "A Vite plugin that generates react-router routes from your component directory tree",
   "author": "Travis J True",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "files": [
     "dist",

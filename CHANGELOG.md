@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-19
+
 ### Changed
 
 - **Breaking:** the generated module now default-exports the route config array
@@ -43,5 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `client` types entry declaring the virtual module for TypeScript.
 
 [0.1.0]: https://github.com/travistrue2008/vite-react-file-router/releases/tag/0.1.0
-[Unreleased]: https://github.com/travistrue2008/vite-react-file-router/compare/0.2.0...HEAD
 [0.2.0]: https://github.com/travistrue2008/vite-react-file-router/compare/0.1.0...0.2.0
+[Unreleased]: https://github.com/travistrue2008/vite-react-file-router/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/travistrue2008/vite-react-file-router/compare/0.2.0...0.3.0
