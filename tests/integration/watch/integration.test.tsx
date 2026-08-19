@@ -108,7 +108,7 @@ test('adding the default export back regenerates the routes', async () => {
 test('the virtual module reflects the same change', async () => {
   const module = await server.ssrLoadModule(VIRTUAL_ROUTES_ID)
 
-  const paths = module.default.routes[0].children.map(
+  const paths = module.default[0].children.map(
     (child: { path?: string }) => child.path,
   )
 

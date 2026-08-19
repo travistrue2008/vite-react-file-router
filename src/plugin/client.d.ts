@@ -9,9 +9,9 @@
  *   /// <reference path="./plugin/client.d.ts" />
  */
 declare module 'virtual:file-router/routes.jsx' {
-  import type { createBrowserRouter } from 'react-router'
+  import type { RouteObject } from 'react-router'
 
-  const router: ReturnType<typeof createBrowserRouter>
+  const routes: [RouteObject, ...RouteObject[]]
 
-  export default router
+  export default routes
 }

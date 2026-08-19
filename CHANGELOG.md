@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** the generated module now default-exports the route config array
+  instead of a constructed `createBrowserRouter()`. Apps build their own router:
+  `createBrowserRouter(routes)`. Generated code no longer imports `react-router`
+  at all, so the config works with any router — memory, static, hash,
+  `useRoutes` — and with Storybook's react-router addon.
+
 ## [0.2.0] - 2026-08-14
 
 ### Changed

@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeAll, expect, test } from 'bun:test'
 import { act, cleanup, render, screen } from '@testing-library/react'
-import { fileURLToPath } from 'node:url'
 import { RouterProvider, type createBrowserRouter } from 'react-router'
+import { loadRouter, loadRoutes, startServer } from '../server'
+
 import type { ViteDevServer } from 'vite'
-import { loadRouter, startServer } from '../server'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 
@@ -15,15 +16,12 @@ beforeAll(async () => {
   router = await loadRouter(server)
 })
 
-// Testing Library's auto-cleanup doesn't hook into bun:test, so mounted trees
-// would otherwise pile up in the shared document.
 afterEach(cleanup)
 
 afterAll(async () => {
   await server?.close()
 })
 
-/** Mounts the generated router and drives it the way a link click would. */
 async function renderAt (path: string) {
   render(<RouterProvider router={router} />)
 
@@ -58,4 +56,17 @@ test('an unmatched URL falls through to the built-in 404', async () => {
   await renderAt('/nonsense')
 
   expect(screen.getByText('404 - Not Found')).toBeTruthy()
+})
+
+test('the module default-exports the route config', async () => {
+  const routes = await loadRoutes(server)
+
+  expect(routes).toHaveLength(1)
+  expect(routes[0].path).toBe('/')
+
+  const paths = routes[0].children.map(
+    (child: { path?: string }) => child.path,
+  )
+
+  expect(paths).toContain('users')
 })
