@@ -33,8 +33,8 @@ describe('shouldRegenerate', () => {
     }
   })
 
-  // Validation reads these files, so their contents can flip the build's
-  // outcome.
+  // The plugin reads these files, so their contents can flip the build's
+  // outcome — or, for `meta`, change the emitted route object outright.
   test.each([
     'Page.tsx',
     'Page.jsx',
@@ -42,6 +42,8 @@ describe('shouldRegenerate', () => {
     'Layout.jsx',
     '404.tsx',
     '404.jsx',
+    'meta.ts',
+    'meta.js',
   ])('a content edit to %s regenerates', (file) => {
     expect(onChange(file)).toBe(true)
   })
@@ -55,6 +57,9 @@ describe('shouldRegenerate', () => {
     'PageHeader.tsx',
     'MyLayout.tsx',
     'Page.md',
+    'Meta.ts',
+    'meta.tsx',
+    'meta.config.ts',
   ])('a content edit to %s does not', (file) => {
     expect(onChange(file)).toBe(false)
   })

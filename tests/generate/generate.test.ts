@@ -15,7 +15,12 @@ import {
 } from '../../src/plugin/generate'
 import { scan } from '../../src/plugin/scan'
 import { validate } from '../../src/plugin/validate'
-import { type Files, stabilize, withFixture } from '../helpers'
+import {
+  type Files,
+  PAGE_SOURCE,
+  stabilize,
+  withFixture,
+} from '../helpers'
 
 /**
  * Scan + validate + generate in file mode (relative imports), with the built-in
@@ -399,6 +404,130 @@ describe('use-cases that are now errors', () => {
   })
 })
 
+describe('route metadata', () => {
+  const ID_ONLY = "export const id = 'users'\n"
+  const LOADER_ONLY = 'export async function loader () {\n  return null\n}\n'
+
+  test('a root meta lands on the root route object', () => {
+    expect(sourceFor(['Page.tsx', 'meta.ts'])).toBe(
+      `${HEADER}
+import NotFoundPage from '<built-in-404>'
+import * as Meta from './components/app/meta'
+import Page from './components/app/Page'
+
+export default [
+  {
+    id: Meta.id,
+    path: '/',
+    loader: Meta.loader,
+    children: [
+      {
+        index: true,
+        element: <Page />,
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ],
+  },
+]
+`,
+    )
+  })
+
+  test('an id-only meta emits no loader', () => {
+    const source = sourceFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.ts': ID_ONLY,
+    })
+
+    expect(source).toContain('id: Meta.id,')
+    expect(source).not.toContain('loader:')
+  })
+
+  // Also pins that `path` stays the first key when there is no `id` to lead.
+  test('a loader-only meta emits no id', () => {
+    const source = sourceFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.ts': LOADER_ONLY,
+    })
+
+    expect(source).toContain(`  {
+    path: '/',
+    loader: Meta.loader,`)
+
+    expect(source).not.toContain('id:')
+  })
+
+  test('meta comes before Layout and Page in a sub-route', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/Layout.tsx',
+      'users/Page.tsx',
+      'users/meta.ts',
+    ])
+
+    expect(source).toContain(
+      "import * as Users_Meta from './components/app/users/meta'\n" +
+        "import Users_Layout from './components/app/users/Layout'\n" +
+        "import Users_Page from './components/app/users/Page'",
+    )
+
+    expect(source).toContain(`      {
+        id: Users_Meta.id,
+        path: 'users',
+        loader: Users_Meta.loader,
+        element: <Users_Layout />,`)
+  })
+
+  // The metadata belongs to the directory's own route, not to the index child
+  // that renders its Page — that is what makes a loader run for nested routes.
+  test('the index child never carries the metadata', () => {
+    const source = sourceFor(['Page.tsx', 'users/Page.tsx', 'users/meta.ts'])
+
+    expect(source).toContain(`          {
+            index: true,
+            element: <Users_Page />,
+          },`)
+
+    expect(source.match(/loader: Users_Meta\.loader,/g)).toHaveLength(1)
+  })
+
+  test('a dynamic segment names its meta like any other file', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/$userId/Page.tsx',
+      'users/$userId/meta.ts',
+    ])
+
+    expect(source).toContain(
+      'import * as Users__UserId_Meta from ' +
+        "'./components/app/users/$userId/meta'",
+    )
+
+    expect(source).toContain('id: Users__UserId_Meta.id,')
+  })
+
+  test('a Page-less parent directory still takes its metadata', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/meta.ts',
+      'users/$userId/Page.tsx',
+    ])
+
+    expect(source).toContain(`      {
+        id: Users_Meta.id,
+        path: 'users',
+        loader: Users_Meta.loader,
+        children: [
+          {
+            index: true,
+            element: <NotFoundPage />,
+          },`)
+  })
+})
+
 // The virtual module has no directory, so its imports have to be absolute.
 // Both modes come from the same tree, which is what keeps the optional debug
 // file honest — importing it gives you the same routes as the virtual module.
@@ -417,6 +546,21 @@ describe('virtual vs file rendering', () => {
     expect(source).not.toContain("from './")
   })
 
+  // A meta module keeps its extension in the virtual module and loses it in
+  // the debug file, exactly as the components do.
+  test('a meta module is imported the same two ways', () => {
+    const files = ['Page.tsx', 'users/Page.tsx', 'users/meta.ts']
+
+    const absolute =
+      /^import \* as Users_Meta from '\/.+\/app\/users\/meta\.ts'$/m
+
+    expect(virtualSourceFor(files)).toMatch(absolute)
+
+    expect(sourceFor(files)).toContain(
+      "import * as Users_Meta from './components/app/users/meta'",
+    )
+  })
+
   test('the debug file imports relatively, without extensions', () => {
     const source = sourceFor(['Page.tsx', 'users/Page.tsx'])
 
@@ -428,7 +572,13 @@ describe('virtual vs file rendering', () => {
   })
 
   test('only the import specifiers differ', () => {
-    const files = ['Layout.tsx', 'Page.tsx', 'users/$userId/Page.tsx']
+    const files = [
+      'Layout.tsx',
+      'Page.tsx',
+      'meta.ts',
+      'users/$userId/Page.tsx',
+      'users/$userId/meta.ts',
+    ]
 
     const strip = (source: string) =>
       source

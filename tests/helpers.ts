@@ -9,12 +9,21 @@ export const LAYOUT_SOURCE =
   "import { Outlet } from 'react-router'\n\n" +
   'export default function Layout() {\n  return <Outlet />\n}\n'
 
+export const META_SOURCE =
+  "export const id = 'route'\n\n" +
+  'export async function loader () {\n  return null\n}\n'
+
 /**
  * A fixture app tree. Keys are paths relative to `src/components/app`; a key
  * ending in `/` creates an empty directory, which several spec use-cases depend
  * on and which git could not track as a checked-in fixture.
  */
 export type Files = Record<string, string> | string[]
+
+/** Matched on the whole basename, so a `metadata/` directory isn't one. */
+function isMeta (path: string): boolean {
+  return path.endsWith('meta.ts') || path.endsWith('meta.js')
+}
 
 function normalize (files: Files): Record<string, string> {
   if (!Array.isArray(files)) return files
@@ -24,9 +33,11 @@ function normalize (files: Files): Record<string, string> {
       path,
       path.endsWith('/')
         ? ''
-        : path.includes('Layout')
-          ? LAYOUT_SOURCE
-          : PAGE_SOURCE,
+        : isMeta(path)
+          ? META_SOURCE
+          : path.includes('Layout')
+            ? LAYOUT_SOURCE
+            : PAGE_SOURCE,
     ]),
   )
 }

@@ -43,16 +43,19 @@ export const WATCH_EVENTS = [
 
 export type WatchEvent = (typeof WATCH_EVENTS)[number]
 
-/** Files whose *contents* validation depends on. */
-const ROUTE_COMPONENT = /(?:^|[/\\])(?:Page|Layout|404)\.(?:tsx|jsx)$/
+/** Files whose *contents* the generated routes depend on. */
+const WATCHED_FILE =
+  /(?:^|[/\\])(?:(?:Page|Layout|404)\.(?:tsx|jsx)|meta\.(?:ts|js))$/
 
 /**
  * Decides whether a watcher event can change the generated output.
  *
  * Adding or removing anything reshapes the tree. A content edit normally can't,
- * and is left to Fast Refresh — except in a route component, whose `default`
- * export is validated. Without that, fixing a bad export would emit only a
- * `change` event and the plugin would never retry.
+ * and is left to Fast Refresh — except in the files this plugin reads. A route
+ * component's `default` export is validated, so without this, fixing a bad
+ * export would emit only a `change` event and the plugin would never retry; a
+ * `meta` module goes further still, since which of `id` and `loader` it exports
+ * decides what the route object contains.
  */
 export function shouldRegenerate (
   event: WatchEvent,
@@ -61,7 +64,7 @@ export function shouldRegenerate (
 ): boolean {
   if (!path.startsWith(inputDir)) return false
 
-  return event !== 'change' || ROUTE_COMPONENT.test(path)
+  return event !== 'change' || WATCHED_FILE.test(path)
 }
 
 /**
@@ -196,4 +199,5 @@ export default function fileRouter (options: FileRouterOptions = {}): Plugin {
 }
 
 export { buildRouteTree, generate, writeRoutesFile } from './generate.ts'
+export type { MetaExports, RouteMeta } from './meta.ts'
 export type { RouteNode, RouteTree } from './scan.ts'

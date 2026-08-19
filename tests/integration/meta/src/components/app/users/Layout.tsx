@@ -1,11 +1,11 @@
 import { Outlet, useLoaderData } from 'react-router'
 
 export default function Layout () {
-  const { count } = useLoaderData() as { count: number }
+  const { name } = useLoaderData() as { name: string }
 
   return (
     <div>
-      <div>{count} users</div>
+      <div>Loaded: {name}</div>
       <Outlet />
     </div>
   )

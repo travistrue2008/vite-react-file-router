@@ -1,17 +1,10 @@
-import { readFileSync } from 'node:fs'
 import { relative } from 'node:path'
-import { parseSync } from 'rolldown/experimental'
 import { importName } from './naming.ts'
+import { exportedName, parseModule, type Node } from './parse.ts'
 import { walk, type RouteNode, type RouteTree } from './scan.ts'
 
 /** Wrappers whose return value is still a valid React component. */
 const COMPONENT_WRAPPERS = new Set(['memo', 'forwardRef', 'lazy'])
-
-// rolldown exports no node type for the AST `parseSync` returns. Every read
-// below is guarded on `type` first, so a structural alias is the honest shape —
-// `unknown` would only add a cast at each of those reads.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Node = Record<string, any>
 
 /** Everything that can appear as a `default` export and still render. */
 function isComponentExpression (node: Node | null | undefined): boolean {
@@ -79,29 +72,13 @@ function resolvesToComponent (body: Node[], name: string): boolean {
   return false
 }
 
-function exportedName (specifier: Node): string | undefined {
-  return specifier.exported?.name ?? specifier.exported?.value
-}
-
 type DefaultExport =
   | { kind: 'missing' }
   | { kind: 'invalid' }
   | { kind: 'valid' }
 
-function inspectDefaultExport (
-  source: string,
-  filePath: string,
-): DefaultExport {
-  const { program, errors } = parseSync(filePath, source)
-
-  if (errors.length > 0) {
-    throw new Error(
-      `[vite-react-file-router] failed to parse ${filePath}: ` +
-        `${errors[0]?.message ?? 'unknown error'}`,
-    )
-  }
-
-  const body = program.body as Node[]
+function inspectDefaultExport (filePath: string): DefaultExport {
+  const body = parseModule(filePath)
 
   for (const statement of body) {
     if (statement.type === 'ExportDefaultDeclaration') {
@@ -177,12 +154,13 @@ export function validate (tree: RouteTree, root: string): void {
   for (const node of nodes) {
     if (node.page) claim(importName(node.segments, 'Page'), node.dirPath)
     if (node.layout) claim(importName(node.segments, 'Layout'), node.dirPath)
+    if (node.meta) claim(importName(node.segments, 'Meta'), node.dirPath)
   }
 
-  // 3. Every component file must default-export something renderable.
+  // 3. Every component file must default-export something renderable. Meta
+  // modules are deliberately absent here — they export no component.
   for (const filePath of componentFiles(tree)) {
-    const source = readFileSync(filePath, 'utf8')
-    const result = inspectDefaultExport(source, filePath)
+    const result = inspectDefaultExport(filePath)
 
     if (result.kind === 'missing') {
       errors.push(`[Error] ${display(filePath)}: has no \`default\` export`)
@@ -192,6 +170,22 @@ export function validate (tree: RouteTree, root: string): void {
       errors.push(
         `[Error] ${display(filePath)}: ` +
           '`default` export is not a valid React component',
+      )
+    }
+  }
+
+  // 4. A meta module exporting neither recognized name contributes nothing, so
+  // it is always a mistake rather than a no-op worth tolerating.
+  for (const node of nodes) {
+    if (!node.meta) continue
+
+    const { id, loader } = node.meta.exports
+
+    if (!id && !loader) {
+      // Split only to fit the line limit — see the note on pass 3's message.
+      errors.push(
+        `[Error] ${display(node.meta.path)}: ` +
+          'exports neither `id` nor `loader`',
       )
     }
   }

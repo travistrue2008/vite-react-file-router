@@ -36,12 +36,25 @@ function specifier (target: string, fromDir?: string): string {
   return path.startsWith('.') ? path : `./${path}`
 }
 
-type Import = { name: string; from: string }
+type Import = {
+  name: string
+  from: string
+  /** `import * as name`, which is how a meta module's exports are read. */
+  namespace?: boolean
+}
 
 function collectImports (node: RouteNode, fromDir?: string): Import[] {
   const own: Import[] = []
 
-  // Layout before Page, matching the spec's ordering.
+  // Meta, then Layout, then Page — the order their properties are emitted in.
+  if (node.meta) {
+    own.push({
+      name: importName(node.segments, 'Meta'),
+      from: specifier(node.meta.path, fromDir),
+      namespace: true,
+    })
+  }
+
   if (node.layout) {
     own.push({
       name: importName(node.segments, 'Layout'),
@@ -78,6 +91,9 @@ function routeSegment (segment: string): string {
  * Every node gets an index child: its own Page when it has one, otherwise the
  * 404 — a directory that exists but renders nothing would otherwise leave a
  * blank page, since the root splat can't match a path a real route claimed.
+ *
+ * A directory's `meta` lands on this object rather than on the index child, so
+ * its loader runs for everything nested beneath the segment too.
  */
 function renderRoute (
   node: RouteNode,
@@ -86,10 +102,18 @@ function renderRoute (
 ): string[] {
   const lines: string[] = [line(depth, '{')]
   const body = depth + 1
+  const meta = node.meta ? importName(node.segments, 'Meta') : ''
+
+  // `id` leads: it names the route, before `path` matches it.
+  if (node.meta?.exports.id) lines.push(line(body, `id: ${meta}.id,`))
 
   lines.push(
     line(body, `path: '${isRoot ? '/' : routeSegment(node.segment)}',`),
   )
+
+  if (node.meta?.exports.loader) {
+    lines.push(line(body, `loader: ${meta}.loader,`))
+  }
 
   if (node.layout) {
     const layout = importName(node.segments, 'Layout')
@@ -150,7 +174,11 @@ export function generate (tree: RouteTree, fromDir?: string): string {
 
   return [
     BANNER,
-    ...imports.map(({ name, from }) => `import ${name} from '${from}'`),
+    ...imports.map(({ name, from, namespace }) => {
+      const binding = namespace ? `* as ${name}` : name
+
+      return `import ${binding} from '${from}'`
+    }),
     '',
     'export default [',
     ...renderRoute(tree.root, 1, true),
