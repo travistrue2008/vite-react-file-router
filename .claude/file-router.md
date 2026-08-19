@@ -96,7 +96,7 @@ Here are some specs on how to generate code:
   - Convert each directory name into `PascalCase`
   - Replace the path's slashes with underscores (`_`)
   - Directories representing dynamic route params replace their starting with a dollar sign (`$`) with an underscore (`_`)
-- Import the `Layout` before the `Page` for directories that contain both
+- Import the directory's `meta` before its `Layout`, and the `Layout` before its `Page`
 - The module default-exports the route config array and constructs no router; the app passes it to `createBrowserRouter()`, `createMemoryRouter()`, or whichever router it prefers. Nothing is imported from `react-router`.
 
 Here's a block of code containing multiple examples:
@@ -114,6 +114,24 @@ import Blog__LastWeek from 'blog/$last-week'
 import Blog__LastWeek from 'blog/$lastWeek'
 import Blog__LastWeek from 'blog/$LastWeek'
 ```
+
+## Meta Files
+
+A route directory may contain a `meta.{ts|js}` module carrying route metadata. Both of its named exports are optional:
+
+- `id`: the route's ID
+- `loader`: the `react-router` data loader for the route
+
+Specs:
+
+- Only lowercase `meta.ts` and `meta.js` are recognized, `.ts` winning over `.js` with a shadowing warning, the same way `Page.tsx` wins over `Page.jsx`
+- Each export is emitted onto the route object only when the module actually exports it
+- A `meta` module exporting **neither** `id` nor `loader` is a validation error
+- The module is imported as a namespace (`import * as Users_Meta from ...`), since its exports are named rather than default
+- Its import name is the directory's, suffixed `_Meta` — the one suffix whose casing doesn't match its filename
+- The metadata lands on the **directory's own route object**, not on the synthesized index child, so a `loader` runs for the segment and everything nested beneath it
+- `id` is emitted before `path`; `loader` after it, and both before `element`
+- A `meta` module is never checked for a `default` export
 
 ## Generation Use-Cases
 
@@ -587,6 +605,51 @@ export default [
                 element: <Users__UserId_Page />,
               },
             ],
+          },
+        ],
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ],
+  },
+]
+```
+
+### Route Metadata
+
+Files:
+
+- `/Page.tsx`
+- `/users/Page.tsx`
+- `/users/meta.ts`
+
+`meta.ts` exports both `id` and `loader`.
+
+Config:
+```jsx
+import NotFoundPage from '@src/plugin/404'
+import Page from './components/app/Page'
+import * as Users_Meta from './components/app/users/meta'
+import Users_Page from './components/app/users/Page'
+
+export default [
+  {
+    path: '/',
+    children: [
+      {
+        index: true,
+        element: <Page />,
+      },
+      {
+        id: Users_Meta.id,
+        path: 'users',
+        loader: Users_Meta.loader,
+        children: [
+          {
+            index: true,
+            element: <Users_Page />,
           },
         ],
       },

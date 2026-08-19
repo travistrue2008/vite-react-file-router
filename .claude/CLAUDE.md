@@ -62,9 +62,11 @@ tree would make it retrigger itself.
 | --- | --- |
 | `index.ts` | Plugin hooks, virtual module, watcher, debounce. |
 | `scan.ts` | Directory tree → `RouteTree`. |
-| `validate.ts` | Leaf-`Page` rule, import-name collisions, `default` export checks. |
+| `validate.ts` | Leaf-`Page` rule, import-name collisions, `default` and `meta` export checks. |
 | `naming.ts` | Segment → import identifier. |
 | `generate.ts` | `RouteTree` → module source; path resolution; debug-file writing. |
+| `parse.ts` | Rolldown AST plumbing shared by `scan.ts` and `validate.ts`. |
+| `meta.ts` | `meta.{ts,js}` → which of `id` / `loader` a route object gets. |
 | `404.jsx` | Built-in fallback, used when the app defines no `404.{tsx,jsx}`. |
 
 Load-bearing details:
@@ -75,15 +77,17 @@ Load-bearing details:
 - Validation runs in `buildStart`, not `load`, so a broken tree fails `vite build` and dev-server
   startup instead of surfacing on whichever request imports the routes first.
 - Validation reports **every** failure at once, never just the first.
-- `default` exports are validated by **parsing** (rolldown), never by evaluating user modules.
+- `default` exports are validated by **parsing** (rolldown), never by evaluating user modules. So
+  are a `meta` module's named exports — and because *which* of `id`/`loader` exist decides what
+  `generate.ts` emits, that parse happens in `scan.ts`, not `validate.ts`.
 - Mid-session validation failures keep the dev server up: last good routes stay served, the error
   goes to the console and browser overlay, and fixing it clears the overlay.
 - Regeneration only reloads when the emitted source actually changed — otherwise a `Page` edit would
   full-reload instead of hot-updating.
 - Relative imports inside `src/plugin` carry explicit `.ts` extensions, required by Vite's native
   config loader.
-- `BANNER` in `generate.ts` and the invalid-`default`-export message in `validate.ts` are string
-  concatenations split **only** to fit the 80-column limit. Independent copies live in
+- `BANNER` in `generate.ts` and the invalid-`default`-export and inert-`meta` messages in
+  `validate.ts` are string concatenations split **only** to fit the 80-column limit. Independent copies live in
   `tests/generate/generate.test.ts`, `tests/unit/validate.test.ts`, and the README, and
   `generate.test.ts` matches `outputPath must not be inside inputPath` as one phrase. Re-split
   those lines freely; never reword the text, and never let a seam fall inside an asserted
@@ -129,8 +133,8 @@ in `vite.config.ts`.
 - No semicolons, single quotes, two-space indent, trailing commas, a space before named-function
   parens (`function scan (dir)`), and an 80-column hard limit. `eslint.config.mjs` enforces all of
   it — run `bun run lint:fix` rather than hand-formatting.
-- `any` is an error. The single exception is the rolldown AST alias in `validate.ts`, which carries
-  an inline disable and a comment explaining why `unknown` would be worse.
+- `any` is an error. The single exception is the rolldown AST alias in `parse.ts`, which carries an
+  inline disable and a comment explaining why `unknown` would be worse.
 - Comments explain *why* — the non-obvious constraint, not the mechanics. Match the existing density.
 - Errors and warnings are prefixed `[vite-react-file-router]`.
 - Only `src/plugin` may use `node:fs` / `node:path`; keep the demo app browser-only.

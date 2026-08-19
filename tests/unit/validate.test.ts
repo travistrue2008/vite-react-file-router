@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import { scan } from '../../src/plugin/scan'
 import { validate } from '../../src/plugin/validate'
-import { LAYOUT_SOURCE, PAGE_SOURCE, withFixture } from '../helpers'
+
+import {
+  LAYOUT_SOURCE,
+  META_SOURCE,
+  PAGE_SOURCE,
+  withFixture,
+} from '../helpers'
 
 /** Runs validation over a fixture and returns the aggregated error message. */
 function errorFor (files: Parameters<typeof withFixture>[0]): string {
@@ -160,5 +166,120 @@ describe('default export validation', () => {
       '[Error] src/components/app/404.tsx: ' +
         '`default` export is not a valid React component',
     )
+  })
+})
+
+describe('meta export validation', () => {
+  const accepted: Record<string, string> = {
+    'a const id': "export const id = 'users'",
+    'a loader declaration': 'export async function loader () { return null }',
+    'a loader arrow': 'export const loader = async () => null',
+    'both exports': "export const id = 'users'\nexport const loader = () => 1",
+    'a specifier list': "const id = 'users'\nexport { id }",
+    'a renamed specifier':
+      'const fetchAll = () => 1\nexport { fetchAll as loader }',
+    'a re-exported loader': "export { loader } from './loader'",
+    'a destructured const':
+      'const config = {}\nexport const { loader } = config',
+    'extra exports alongside a valid one':
+      "export const title = 'Users'\nexport const id = 'users'",
+    'a default export alongside a valid one':
+      "export default {}\nexport const id = 'users'",
+  }
+
+  test.each(Object.entries(accepted))('accepts %s', (_label, source) => {
+    expect(errorFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.ts': source,
+    })).toBe('')
+  })
+
+  const rejected: Record<string, string> = {
+    'an unrecognized export': "export const title = 'Users'",
+    'a default export alone': 'export default { id: 1 }',
+    'a renamed export that is not recognized':
+      'const id = 1\nexport { id as key }',
+    'an empty module': '',
+  }
+
+  test.each(Object.entries(rejected))('rejects %s', (_label, source) => {
+    expect(errorFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.ts': source,
+    })).toBe(
+      '[Error] src/components/app/meta.ts: ' +
+        'exports neither `id` nor `loader`',
+    )
+  })
+
+  // What a bare `export *` re-exports can't be known statically, so it is
+  // assumed to provide both rather than reported as inert.
+  test('accepts a bare export *', () => {
+    expect(errorFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.ts': "export * from './shared'",
+    })).toBe('')
+  })
+
+  // `export * as ns` exports one namespace binding named `ns`, not its members.
+  test('rejects a namespaced export *', () => {
+    expect(errorFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.ts': "export * as meta from './shared'",
+    })).toBe(
+      '[Error] src/components/app/meta.ts: ' +
+        'exports neither `id` nor `loader`',
+    )
+  })
+
+  test('a meta module is never checked for a default export', () => {
+    expect(errorFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.ts': "export const id = 'root'",
+    })).toBe('')
+  })
+
+  test('meta.js is recognized too', () => {
+    expect(errorFor({
+      'Page.tsx': PAGE_SOURCE,
+      'meta.js': 'export const title = 1',
+    })).toBe(
+      '[Error] src/components/app/meta.js: ' +
+        'exports neither `id` nor `loader`',
+    )
+  })
+
+  test('two spellings of the same segment collide', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'blog/last-week/Page.tsx': PAGE_SOURCE,
+        'blog/last-week/meta.ts': META_SOURCE,
+        'blog/lastWeek/Page.tsx': PAGE_SOURCE,
+        'blog/lastWeek/meta.ts': META_SOURCE,
+      }),
+    ).toContain('[Error] duplicate import name `Blog_LastWeek_Meta`')
+  })
+
+  test('Meta does not collide with the directory it sits in', () => {
+    expect(
+      errorFor({
+        'Layout.tsx': LAYOUT_SOURCE,
+        'Page.tsx': PAGE_SOURCE,
+        'meta.ts': META_SOURCE,
+      }),
+    ).toBe('')
+  })
+
+  // Both passes run, so a directory can be wrong in two ways at once.
+  test('an inert meta in a Page-less leaf reports both failures', () => {
+    expect(errorFor({
+      'Page.tsx': PAGE_SOURCE,
+      'orders/meta.ts': "export const title = 'Orders'",
+    }).split('\n')).toEqual([
+      '[Error] src/components/app/orders: Page.{jsx|tsx} not found',
+      '[Error] src/components/app/orders/meta.ts: ' +
+        'exports neither `id` nor `loader`',
+    ])
   })
 })

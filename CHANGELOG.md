@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Optional `meta.{ts,js}` file per route directory, with two optional named
+  exports: `id` becomes the route's `id`, and `loader` becomes its `loader`.
+  Each is emitted only when the module actually exports it, and a `meta` file
+  exporting neither is a validation error.
+- The metadata lands on the directory's own route rather than on the index
+  child that renders its `Page`, so a `loader` runs for the segment and
+  everything nested beneath it. A `Layout` reads it with `useLoaderData()`; a
+  `Page` reads it with `useRouteLoaderData(id)`.
+- Editing a `meta` file's contents regenerates the routes, since which of `id`
+  and `loader` it exports decides what the route object contains.
+
 ## [0.3.0] - 2026-08-19
 
 ### Changed

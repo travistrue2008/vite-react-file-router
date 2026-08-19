@@ -29,6 +29,7 @@ describe('importName', () => {
   test('root directory yields a bare name', () => {
     expect(importName([], 'Page')).toBe('Page')
     expect(importName([], 'Layout')).toBe('Layout')
+    expect(importName([], 'Meta')).toBe('Meta')
   })
 
   test.each([
@@ -45,6 +46,13 @@ describe('importName', () => {
   test('kind is the suffix', () => {
     expect(importName(['users', '$userId'], 'Layout'))
       .toBe('Users__UserId_Layout')
+
+    // `Meta` is the one kind whose suffix doesn't match its filename, which is
+    // the lowercase `meta.{ts,js}`.
+    expect(importName(['users'], 'Meta')).toBe('Users_Meta')
+
+    expect(importName(['users', '$userId'], 'Meta'))
+      .toBe('Users__UserId_Meta')
   })
 
   // The spec's own example block lists four spellings collapsing to one name.
