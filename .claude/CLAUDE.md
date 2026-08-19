@@ -92,8 +92,8 @@ Load-bearing details:
 ## Demo app
 
 - `index.html` is at the **project root** (Vite requires it) and loads `/src/main.tsx`.
-- `src/main.tsx` mounts React into `#root`; `src/components/App.tsx` renders `<RouterProvider>` with
-  the router from the virtual module.
+- `src/main.tsx` mounts React into `#root`; `src/components/App.tsx` builds a `createBrowserRouter`
+  from the config the virtual module default-exports, then renders `<RouterProvider>`.
 - `src/components/app/` is the demo route tree — sub-directories are segments, `$param` directories
   are dynamic segments, each holding `Page.tsx` and/or `Layout.tsx`.
 - `src/routes.jsx` is the debug copy written because `vite.config.ts` sets `outputPath`. It is

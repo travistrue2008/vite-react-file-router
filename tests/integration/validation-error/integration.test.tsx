@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { loadRouter, startServer } from '../server'
+import { loadRoutes, startServer } from '../server'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 const ordersDir = join(root, 'src/components/app/orders/:orderId')
@@ -36,6 +36,6 @@ test('a Page-less leaf directory fails the dev server at startup', async () => {
 test('the same tree starts cleanly once the Page exists', async () => {
   const server = await startServer(root)
 
-  await expect(loadRouter(server)).resolves.toBeDefined()
+  await expect(loadRoutes(server)).resolves.toBeDefined()
   await server.close()
 })

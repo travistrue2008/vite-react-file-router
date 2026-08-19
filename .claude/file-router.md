@@ -97,6 +97,7 @@ Here are some specs on how to generate code:
   - Replace the path's slashes with underscores (`_`)
   - Directories representing dynamic route params replace their starting with a dollar sign (`$`) with an underscore (`_`)
 - Import the `Layout` before the `Page` for directories that contain both
+- The module default-exports the route config array and constructs no router; the app passes it to `createBrowserRouter()`, `createMemoryRouter()`, or whichever router it prefers. Nothing is imported from `react-router`.
 
 Here's a block of code containing multiple examples:
 
@@ -128,7 +129,7 @@ Config:
 ```jsx
 import NotFoundPage from '@src/plugin/404'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -138,7 +139,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### User-Defined 404 Component
@@ -151,7 +152,7 @@ Config:
 ```jsx
 import NotFoundPage from 'src/components/app/404.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -161,7 +162,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Root (Page-Only)
@@ -175,7 +176,7 @@ Config:
 import NotFoundPage from '@src/plugin/404'
 import Page from 'src/components/app/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -189,7 +190,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Root (Layout-Only)
@@ -203,7 +204,7 @@ Config:
 import NotFoundPage from '@src/plugin/404'
 import Layout from 'src/components/app/Layout.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     element: <Layout />
@@ -214,7 +215,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Root (Page and Layout)
@@ -230,7 +231,7 @@ import NotFoundPage from '@src/plugin/404'
 import Layout from 'src/components/app/Layout.tsx'
 import Page from 'src/components/app/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     element: <Layout />
@@ -245,7 +246,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Sub-Route (Page-Only)
@@ -259,7 +260,7 @@ Config:
 import NotFoundPage from '@src/plugin/404'
 import Users_Page from 'src/components/app/users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -278,7 +279,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Sub-Route (Layout-Only)
@@ -292,7 +293,7 @@ Config:
 import NotFoundPage from '@src/plugin/404'
 import Users_Layout from 'src/components/app/users/Layout.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -306,7 +307,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Sub-Route (Page and Layout)
@@ -322,7 +323,7 @@ import NotFoundPage from '@src/plugin/404'
 import Users_Layout from 'src/components/app/users/Layout.tsx'
 import Users_Page from 'src/components/app/users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -342,7 +343,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Sub-Route (Page and Layout with Root)
@@ -359,7 +360,7 @@ import NotFoundPage from '@src/plugin/404'
 import Users_Layout from 'src/components/app/users/Layout.tsx'
 import Users_Page from 'src/components/app/users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -383,7 +384,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Nested Route (Page-Only)
@@ -397,7 +398,7 @@ Config:
 import NotFoundPage from '@src/plugin/404'
 import Users__UserId_Page from 'src/components/app/users/:users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -421,7 +422,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Nested Route (Layout-Only)
@@ -435,7 +436,7 @@ Config:
 import NotFoundPage from '@src/plugin/404'
 import Users__UserId_Layout from 'src/components/app/users/:users/Layout.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -454,7 +455,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Nested Route (Page and Layout)
@@ -470,7 +471,7 @@ import NotFoundPage from '@src/plugin/404'
 import Users__UserId_Layout from 'src/components/app/users/:users/Layout.tsx'
 import Users__UserId_Page from 'src/components/app/users/:users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -495,7 +496,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Nested Route (Page and Layout with Parent Route)
@@ -513,7 +514,7 @@ import Users_Page from 'src/components/app/users/Page.tsx'
 import Users__UserId_Layout from 'src/components/app/users/:users/Layout.tsx'
 import Users__UserId_Page from 'src/components/app/users/:users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -542,7 +543,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Nested Route (Page and Layout with Parent Route and Root)
@@ -562,7 +563,7 @@ import Users_Page from 'src/components/app/users/Page.tsx'
 import Users__UserId_Layout from 'src/components/app/users/:users/Layout.tsx'
 import Users__UserId_Page from 'src/components/app/users/:users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     children: [
@@ -595,7 +596,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ### Full Example
@@ -619,7 +620,7 @@ import Users_Page from 'src/components/app/users/Page.tsx'
 import Users__UserId_Layout from 'src/components/app/users/:users/Layout.tsx'
 import Users__UserId_Page from 'src/components/app/users/:users/Page.tsx'
 
-export default createBrowserRouter([
+export default [
   {
     path: '/',
     element: <Layout />,
@@ -654,7 +655,7 @@ export default createBrowserRouter([
       },
     ],
   },
-])
+]
 ```
 
 ## Questions

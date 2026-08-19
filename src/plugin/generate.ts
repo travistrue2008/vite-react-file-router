@@ -132,6 +132,10 @@ function renderRoute (
 /**
  * Renders the route tree as the source of the routes module.
  *
+ * The module default-exports the route config and constructs no router — which
+ * one to build is the app's call, and it keeps `react-router` out of the
+ * emitted imports entirely.
+ *
  * `fromDir` is the directory the output will live in, which makes the imports
  * relative. Omit it for the virtual module, which has no directory.
  */
@@ -146,12 +150,11 @@ export function generate (tree: RouteTree, fromDir?: string): string {
 
   return [
     BANNER,
-    "import { createBrowserRouter } from 'react-router'",
     ...imports.map(({ name, from }) => `import ${name} from '${from}'`),
     '',
-    'export default createBrowserRouter([',
+    'export default [',
     ...renderRoute(tree.root, 1, true),
-    '])',
+    ']',
     '',
   ].join('\n')
 }
