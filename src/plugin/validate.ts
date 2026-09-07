@@ -152,8 +152,9 @@ export function validate (tree: RouteTree, root: string): void {
   claimed.set('NotFoundPage', tree.notFound ?? '<built-in 404>')
 
   for (const node of nodes) {
-    if (node.page) claim(importName(node.segments, 'Page'), node.dirPath)
     if (node.layout) claim(importName(node.segments, 'Layout'), node.dirPath)
+    if (node.error) claim(importName(node.segments, 'Error'), node.dirPath)
+    if (node.page) claim(importName(node.segments, 'Page'), node.dirPath)
     if (node.meta) claim(importName(node.segments, 'Meta'), node.dirPath)
   }
 
@@ -195,7 +196,9 @@ export function validate (tree: RouteTree, root: string): void {
 
 function componentFiles (tree: RouteTree): string[] {
   const files = walk(tree.root).flatMap((node: RouteNode) =>
-    [node.layout, node.page].filter((file): file is string => Boolean(file)),
+    [node.layout, node.page, node.error].filter(
+      (file): file is string => Boolean(file),
+    ),
   )
 
   return tree.notFound ? [...files, tree.notFound] : files

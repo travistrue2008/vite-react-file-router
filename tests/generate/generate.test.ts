@@ -361,8 +361,19 @@ export default [
     expect(source.indexOf('photos')).toBeLessThan(source.indexOf('users'))
   })
 
+  // Every recognized file is present, because this is what keeps the config
+  // router-agnostic — an Error boundary reads its error with useRouteError()
+  // rather than through a wrapper the generator would have to import.
   test('the config is the default export, with no router construction', () => {
-    const source = sourceFor(['Page.tsx'])
+    const source = sourceFor([
+      'Layout.tsx',
+      'Error.tsx',
+      'Page.tsx',
+      'meta.ts',
+      'users/Page.tsx',
+      'users/Error.tsx',
+      'users/meta.ts',
+    ])
 
     expect(source).toContain('export default [')
     expect(source).not.toContain('createBrowserRouter')
@@ -528,6 +539,113 @@ export default [
   })
 })
 
+describe('error boundaries', () => {
+  test('a root Error boundary lands on the root route object', () => {
+    expect(sourceFor(['Error.tsx', 'Page.tsx'])).toBe(
+      `${HEADER}
+import NotFoundPage from '<built-in-404>'
+import Error from './components/app/Error'
+import Page from './components/app/Page'
+
+export default [
+  {
+    path: '/',
+    errorElement: <Error />,
+    children: [
+      {
+        index: true,
+        element: <Page />,
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ],
+  },
+]
+`,
+    )
+  })
+
+  // `element` renders the route, `errorElement` replaces it when something
+  // under it throws, so they sit together above `children`.
+  test('errorElement follows element, ahead of children', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/Layout.tsx',
+      'users/Page.tsx',
+      'users/Error.tsx',
+      'users/meta.ts',
+    ])
+
+    expect(source).toContain(
+      "import * as Users_Meta from './components/app/users/meta'\n" +
+        "import Users_Layout from './components/app/users/Layout'\n" +
+        "import Users_Error from './components/app/users/Error'\n" +
+        "import Users_Page from './components/app/users/Page'",
+    )
+
+    expect(source).toContain(`      {
+        id: Users_Meta.id,
+        path: 'users',
+        loader: Users_Meta.loader,
+        element: <Users_Layout />,
+        errorElement: <Users_Error />,
+        children: [`)
+  })
+
+  // The boundary belongs to the directory's own route, not to the index child
+  // that renders its Page — that is what lets it catch nested routes too.
+  test('the index child never carries the boundary', () => {
+    const source = sourceFor(['Page.tsx', 'users/Page.tsx', 'users/Error.tsx'])
+
+    expect(source).toContain(`          {
+            index: true,
+            element: <Users_Page />,
+          },`)
+
+    expect(source.match(/errorElement:/g)).toHaveLength(1)
+  })
+
+  test('a Page-less parent directory still takes its boundary', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/Error.tsx',
+      'users/$userId/Page.tsx',
+    ])
+
+    expect(source).toContain(`      {
+        path: 'users',
+        errorElement: <Users_Error />,
+        children: [
+          {
+            index: true,
+            element: <NotFoundPage />,
+          },`)
+  })
+
+  test('a dynamic segment names its boundary like any other file', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/$userId/Page.tsx',
+      'users/$userId/Error.tsx',
+    ])
+
+    expect(source).toContain(
+      'import Users__UserId_Error from ' +
+        "'./components/app/users/$userId/Error'",
+    )
+
+    expect(source).toContain('errorElement: <Users__UserId_Error />,')
+  })
+
+  test('a directory without one emits no errorElement', () => {
+    expect(sourceFor(['Page.tsx', 'users/Page.tsx'])).not.toContain(
+      'errorElement',
+    )
+  })
+})
+
 // The virtual module has no directory, so its imports have to be absolute.
 // Both modes come from the same tree, which is what keeps the optional debug
 // file honest — importing it gives you the same routes as the virtual module.
@@ -575,8 +693,10 @@ describe('virtual vs file rendering', () => {
     const files = [
       'Layout.tsx',
       'Page.tsx',
+      'Error.tsx',
       'meta.ts',
       'users/$userId/Page.tsx',
+      'users/$userId/Error.tsx',
       'users/$userId/meta.ts',
     ]
 

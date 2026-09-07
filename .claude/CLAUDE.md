@@ -61,7 +61,7 @@ tree would make it retrigger itself.
 | Module | Responsibility |
 | --- | --- |
 | `index.ts` | Plugin hooks, virtual module, watcher, debounce. |
-| `scan.ts` | Directory tree → `RouteTree`. |
+| `scan.ts` | Directory tree → `RouteTree`; recognizes `Layout`, `Error`, `Page`, `meta`, root `404`. |
 | `validate.ts` | Leaf-`Page` rule, import-name collisions, `default` and `meta` export checks. |
 | `naming.ts` | Segment → import identifier. |
 | `generate.ts` | `RouteTree` → module source; path resolution; debug-file writing. |

@@ -40,6 +40,8 @@ describe('shouldRegenerate', () => {
     'Page.jsx',
     'Layout.tsx',
     'Layout.jsx',
+    'Error.tsx',
+    'Error.jsx',
     '404.tsx',
     '404.jsx',
     'meta.ts',
@@ -60,6 +62,9 @@ describe('shouldRegenerate', () => {
     'Meta.ts',
     'meta.tsx',
     'meta.config.ts',
+    'ErrorPage.tsx',
+    'error.ts',
+    'Error.ts',
   ])('a content edit to %s does not', (file) => {
     expect(onChange(file)).toBe(false)
   })

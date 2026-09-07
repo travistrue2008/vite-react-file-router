@@ -9,6 +9,7 @@
  *   users/$userId    -> Users__UserId_Page
  *   blog/$last-week  -> Blog__LastWeek_Layout
  *   users (meta.ts)  -> Users_Meta
+ *   users (Error)    -> Users_Error
  */
 
 const SEPARATORS = /[-_\s]+/
@@ -40,14 +41,14 @@ function segmentToIdentifierPart (segment: string): string {
  * Builds the import name for one of a route directory's files.
  *
  * `segments` is the directory path relative to `inputPath`, so the root route
- * directory passes `[]` and yields a bare `Page` / `Layout` / `Meta`.
+ * directory passes `[]` and yields a bare `Page` / `Layout` / `Error` / `Meta`.
  *
  * `Meta` is the one kind whose suffix doesn't match its filename: the file is
  * lowercase `meta.{ts,js}`, because it holds no component.
  */
 export function importName (
   segments: readonly string[],
-  kind: 'Page' | 'Layout' | 'Meta',
+  kind: 'Layout' | 'Error' | 'Page' | 'Meta',
 ): string {
   const prefix = segments.map(segmentToIdentifierPart).join('_')
 

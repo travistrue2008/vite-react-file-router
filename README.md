@@ -110,8 +110,9 @@ Both directory names are unique, and they even result in different routes, howev
 | `Page.{tsx,jsx}` | Rendered when that route matches exactly. |
 | `Layout.{tsx,jsx}` | Wraps the segment and everything beneath it. Must render an `<Outlet />`. |
 | `meta.{ts,js}` | Optional `id` and `loader` for the route. See [Route metadata](#route-metadata). |
+| `Error.{tsx,jsx}` | Rendered when something under the route throws. See [Error boundaries](#error-boundaries). |
 
-`Page` and `Layout` must have a `default` export that is a React component. If both `Page.tsx` and `Page.jsx` exist, `.tsx` wins and the plugin warns — the same goes for `meta.ts` over `meta.js`. Any other file in the directory is ignored, so co-locating styles, helpers, and tests is fine.
+`Page`, `Layout`, and `Error` must have a `default` export that is a React component. If both `Page.tsx` and `Page.jsx` exist, `.tsx` wins and the plugin warns — the same goes for `meta.ts` over `meta.js`. Any other file in the directory is ignored, so co-locating styles, helpers, and tests is fine.
 
 ### Matched Directories
 
@@ -179,6 +180,65 @@ Loaders are applied to the directory's own route, and all sub-routes. For exampl
 - `/users/:userId`
 
 If a loader is defined a meta file in the `src/components/app/users` directory, then the loader will run for both routes. If a `Layout` file is defined in that same directory, then its exported component can read that data with `useLoaderData()`, however a `Page` component must read the data with `useRouteLoaderData(id)`.
+
+### Error boundaries
+
+A route directory may hold an `Error.{tsx,jsx}` component, which becomes the route's `errorElement`:
+
+```tsx
+// src/components/app/users/Error.tsx
+import { isRouteErrorResponse, useRouteError } from 'react-router'
+
+export default function ErrorBoundary () {
+  const error = useRouteError()
+
+  if (isRouteErrorResponse(error)) {
+    return <div>{error.status} {error.statusText}</div>
+  }
+
+  return <div>Could not load users: {(error as Error).message}</div>
+}
+```
+
+```jsx
+import Users_Layout from './components/app/users/Layout'
+import Users_Error from './components/app/users/Error'
+
+// …
+      {
+        path: 'users',
+        element: <Users_Layout />,
+        errorElement: <Users_Error />,
+        children: [
+          {
+            index: true,
+            element: <Users_Page />,
+          },
+        ],
+      },
+```
+
+Its import name takes an `Error` suffix, so `users/Error.tsx` becomes `Users_Error`.
+
+Like a loader, a boundary is applied to the directory's own route, and all sub-routes. It catches whatever that route's `loader`, `Layout`, or `Page` throws, along with anything thrown by a route nested beneath it.
+
+**Read the error with `useRouteError()`, not from props.** These are `react-router`'s [Data Mode](https://reactrouter.com/start/data/custom) routes, where a boundary is rendered with no props at all. Framework Mode's `ErrorBoundary` signature — `({ error, params, loaderData, actionData })` — belongs to route modules compiled by `@react-router/dev`, which is a different toolchain from this plugin. `useRouteError()` returns the same error either way.
+
+**Narrow before reading it.** `useRouteError()` returns `unknown`, because what it hands back depends on what was thrown:
+
+| Thrown | `useRouteError()` returns |
+| --- | --- |
+| `new Error('boom')` | that `Error`, so `.message` reads as expected. |
+| `new Response(body, { status })`, 4xx/5xx | an `ErrorResponse` carrying `.status`, `.statusText`, and `.data` — **not** an `Error`, and `.message` is `undefined`. A JSON content-type is parsed into `.data`; anything else stays text. |
+| `new Response(null, { status: 302, headers: { Location } })` | nothing. A redirect is not an error, so `react-router` follows it and the boundary never renders. |
+
+`isRouteErrorResponse(error)` is what tells the first two apart. Casting straight to `Error` renders an empty message the moment a loader throws a `Response`.
+
+`react-router` renders the _nearest_ boundary, which makes two placements useful. A single `Error.{tsx,jsx}` at the root of `inputPath` catches the whole app. One deeper in the tree narrows coverage to its own sub-routes, and leaves everything else to the boundary above it.
+
+The plugin ships no fallback of its own. A route with no boundary anywhere above it falls through to `react-router`'s default error page.
+
+An `Error` component does not satisfy the leaf rule, since it renders only when something throws. A leaf directory holding one still needs its `Page`.
 
 ---
 
@@ -324,7 +384,7 @@ can't be known statically, and an `id` or `loader` that turns out undefined is t
 
 ## Dev server behavior
 
-Adding, removing, or renaming anything under `inputPath` regenerates the routes and reloads. Editing the *contents* of a `Page`, `Layout`, or `404` re-runs validation. Changing these files' `default` export will also regenerate the routes. Editing any of the named exported in a `meta` module will also rebuild the routes, since its `id` and `loader` exports affects the associated the route object. The routes still only regenerate if they actually changed, so ordinary editing goes through Fast Refresh instead of a page reload. Edits to any other file are ignored entirely. Bursts of events are debounced, so pasting a directory tree is one rebuild.
+Adding, removing, or renaming anything under `inputPath` regenerates the routes and reloads. Editing the *contents* of a `Page`, `Layout`, `Error`, or `404` re-runs validation. Changing these files' `default` export will also regenerate the routes. Editing any of the named exported in a `meta` module will also rebuild the routes, since its `id` and `loader` exports affects the associated the route object. The routes still only regenerate if they actually changed, so ordinary editing goes through Fast Refresh instead of a page reload. Edits to any other file are ignored entirely. Bursts of events are debounced, so pasting a directory tree is one rebuild.
 
 When validation fails mid-session the dev server **stays up**. The error goes to the console and the browser overlay, the last good routes keep serving, and fixing the problem clears the overlay. That covers the common sequence of creating a directory, adding an empty `Page.tsx`, and then writing the component — each step reports what's still missing without taking the server down.
 

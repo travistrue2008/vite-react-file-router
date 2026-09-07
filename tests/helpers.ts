@@ -9,6 +9,11 @@ export const LAYOUT_SOURCE =
   "import { Outlet } from 'react-router'\n\n" +
   'export default function Layout() {\n  return <Outlet />\n}\n'
 
+export const ERROR_SOURCE =
+  "import { useRouteError } from 'react-router'\n\n" +
+  'export default function ErrorBoundary() {\n' +
+  '  return <div>{String(useRouteError())}</div>\n}\n'
+
 export const META_SOURCE =
   "export const id = 'route'\n\n" +
   'export async function loader () {\n  return null\n}\n'
@@ -25,6 +30,13 @@ function isMeta (path: string): boolean {
   return path.endsWith('meta.ts') || path.endsWith('meta.js')
 }
 
+/** Likewise on the basename, so an `ErrorPage.tsx` isn't a boundary. */
+function isErrorBoundary (path: string): boolean {
+  const base = path.split('/').pop()
+
+  return base === 'Error.tsx' || base === 'Error.jsx'
+}
+
 function normalize (files: Files): Record<string, string> {
   if (!Array.isArray(files)) return files
 
@@ -35,9 +47,11 @@ function normalize (files: Files): Record<string, string> {
         ? ''
         : isMeta(path)
           ? META_SOURCE
-          : path.includes('Layout')
-            ? LAYOUT_SOURCE
-            : PAGE_SOURCE,
+          : isErrorBoundary(path)
+            ? ERROR_SOURCE
+            : path.includes('Layout')
+              ? LAYOUT_SOURCE
+              : PAGE_SOURCE,
     ]),
   )
 }

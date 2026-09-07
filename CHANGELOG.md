@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Page` reads it with `useRouteLoaderData(id)`.
 - Editing a `meta` file's contents regenerates the routes, since which of `id`
   and `loader` it exports decides what the route object contains.
+- Optional `Error.{tsx,jsx}` component per route directory, whose `default`
+  export becomes the route's `errorElement`. It catches whatever that route's
+  `loader`, `Layout`, or `Page` throws, along with anything thrown by a route
+  nested beneath it, and reads the error with `useRouteError()`.
+- `react-router` renders the nearest boundary, so one `Error.{tsx,jsx}` at the
+  root of `inputPath` covers the whole app while a deeper one narrows coverage
+  to its own sub-routes. The plugin ships no fallback of its own; a route with
+  no boundary above it still falls through to `react-router`'s default error
+  page.
 
 ## [0.3.0] - 2026-08-19
 

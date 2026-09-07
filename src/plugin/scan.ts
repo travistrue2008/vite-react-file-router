@@ -15,10 +15,12 @@ export type RouteNode = {
   segments: string[]
   /** Absolute path to the directory. */
   dirPath: string
-  /** Absolute path to `Page.{tsx,jsx}`, if present. */
-  page?: string
   /** Absolute path to `Layout.{tsx,jsx}`, if present. */
   layout?: string
+  /** Absolute path to `Error.{tsx,jsx}`, if present. */
+  error?: string
+  /** Absolute path to `Page.{tsx,jsx}`, if present. */
+  page?: string
   /** `meta.{ts,js}` and the route properties it contributes, if present. */
   meta?: RouteMeta
   children: RouteNode[]
@@ -53,7 +55,7 @@ function resolveFile (
   return found[0]
 }
 
-/** Resolves `Page` / `Layout` / `404`, preferring `.tsx`. */
+/** Resolves `Layout` / `Error` / `Page` / `404`, preferring `.tsx`. */
 function resolveComponent (dirPath: string, base: string): string | undefined {
   return resolveFile(dirPath, base, COMPONENT_EXTENSIONS)
 }
@@ -94,6 +96,7 @@ function scanDirectory (
     dirPath,
     page: resolveComponent(dirPath, 'Page'),
     layout: resolveComponent(dirPath, 'Layout'),
+    error: resolveComponent(dirPath, 'Error'),
     meta: resolveMeta(dirPath),
     children,
   }

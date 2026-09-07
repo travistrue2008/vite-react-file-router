@@ -4,8 +4,9 @@ import { validate } from '../../src/plugin/validate'
 
 import {
   LAYOUT_SOURCE,
-  META_SOURCE,
+  ERROR_SOURCE,
   PAGE_SOURCE,
+  META_SOURCE,
   withFixture,
 } from '../helpers'
 
@@ -156,6 +157,27 @@ describe('default export validation', () => {
     ).toBe('[Error] src/components/app/Layout.tsx: has no `default` export')
   })
 
+  test('validates Error files too', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'Error.tsx': 'export const ErrorBoundary = () => null',
+      }),
+    ).toBe('[Error] src/components/app/Error.tsx: has no `default` export')
+  })
+
+  test('rejects a non-component Error default export', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'Error.tsx': 'export default 42',
+      }),
+    ).toBe(
+      '[Error] src/components/app/Error.tsx: ' +
+        '`default` export is not a valid React component',
+    )
+  })
+
   test('validates the app 404 too', () => {
     expect(
       errorFor({
@@ -281,5 +303,50 @@ describe('meta export validation', () => {
       '[Error] src/components/app/orders/meta.ts: ' +
         'exports neither `id` nor `loader`',
     ])
+  })
+})
+
+describe('error boundaries', () => {
+  test('an Error file alongside a Page is valid', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'Error.tsx': ERROR_SOURCE,
+      }),
+    ).toBe('')
+  })
+
+  test('Error, Layout, Page and meta in one directory do not collide', () => {
+    expect(
+      errorFor({
+        'Error.tsx': ERROR_SOURCE,
+        'Layout.tsx': LAYOUT_SOURCE,
+        'Page.tsx': PAGE_SOURCE,
+        'meta.ts': META_SOURCE,
+      }),
+    ).toBe('')
+  })
+
+  test('two spellings of the same segment collide', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'blog/last-week/Page.tsx': PAGE_SOURCE,
+        'blog/last-week/Error.tsx': ERROR_SOURCE,
+        'blog/lastWeek/Page.tsx': PAGE_SOURCE,
+        'blog/lastWeek/Error.tsx': ERROR_SOURCE,
+      }),
+    ).toContain('[Error] duplicate import name `Blog_LastWeek_Error`')
+  })
+
+  // A boundary renders only when something under it throws, so it can never
+  // stand in for the Page a leaf directory owes.
+  test('an Error file does not satisfy the leaf rule', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'orders/Error.tsx': ERROR_SOURCE,
+      }),
+    ).toBe('[Error] src/components/app/orders: Page.{jsx|tsx} not found')
   })
 })

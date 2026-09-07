@@ -45,7 +45,7 @@ export type WatchEvent = (typeof WATCH_EVENTS)[number]
 
 /** Files whose *contents* the generated routes depend on. */
 const WATCHED_FILE =
-  /(?:^|[/\\])(?:(?:Page|Layout|404)\.(?:tsx|jsx)|meta\.(?:ts|js))$/
+  /(?:^|[/\\])(?:(?:Page|Layout|Error|404)\.(?:tsx|jsx)|meta\.(?:ts|js))$/
 
 /**
  * Decides whether a watcher event can change the generated output.

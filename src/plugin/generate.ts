@@ -46,7 +46,7 @@ type Import = {
 function collectImports (node: RouteNode, fromDir?: string): Import[] {
   const own: Import[] = []
 
-  // Meta, then Layout, then Page — the order their properties are emitted in.
+  // Meta, Layout, Error, Page — the order their properties are emitted in.
   if (node.meta) {
     own.push({
       name: importName(node.segments, 'Meta'),
@@ -59,6 +59,13 @@ function collectImports (node: RouteNode, fromDir?: string): Import[] {
     own.push({
       name: importName(node.segments, 'Layout'),
       from: specifier(node.layout, fromDir),
+    })
+  }
+
+  if (node.error) {
+    own.push({
+      name: importName(node.segments, 'Error'),
+      from: specifier(node.error, fromDir),
     })
   }
 
@@ -92,8 +99,9 @@ function routeSegment (segment: string): string {
  * 404 — a directory that exists but renders nothing would otherwise leave a
  * blank page, since the root splat can't match a path a real route claimed.
  *
- * A directory's `meta` lands on this object rather than on the index child, so
- * its loader runs for everything nested beneath the segment too.
+ * A directory's `meta` and `Error` land on this object rather than on the index
+ * child, so its loader runs — and its boundary catches — for everything nested
+ * beneath the segment, the index child's own Page included.
  */
 function renderRoute (
   node: RouteNode,
@@ -119,6 +127,12 @@ function renderRoute (
     const layout = importName(node.segments, 'Layout')
 
     lines.push(line(body, `element: <${layout} />,`))
+  }
+
+  if (node.error) {
+    const boundary = importName(node.segments, 'Error')
+
+    lines.push(line(body, `errorElement: <${boundary} />,`))
   }
 
   lines.push(line(body, 'children: ['))

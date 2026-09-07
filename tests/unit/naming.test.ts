@@ -30,6 +30,7 @@ describe('importName', () => {
     expect(importName([], 'Page')).toBe('Page')
     expect(importName([], 'Layout')).toBe('Layout')
     expect(importName([], 'Meta')).toBe('Meta')
+    expect(importName([], 'Error')).toBe('Error')
   })
 
   test.each([
@@ -50,6 +51,10 @@ describe('importName', () => {
     // `Meta` is the one kind whose suffix doesn't match its filename, which is
     // the lowercase `meta.{ts,js}`.
     expect(importName(['users'], 'Meta')).toBe('Users_Meta')
+    expect(importName(['users'], 'Error')).toBe('Users_Error')
+
+    expect(importName(['users', '$userId'], 'Error'))
+      .toBe('Users__UserId_Error')
 
     expect(importName(['users', '$userId'], 'Meta'))
       .toBe('Users__UserId_Meta')

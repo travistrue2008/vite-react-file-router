@@ -96,7 +96,7 @@ Here are some specs on how to generate code:
   - Convert each directory name into `PascalCase`
   - Replace the path's slashes with underscores (`_`)
   - Directories representing dynamic route params replace their starting with a dollar sign (`$`) with an underscore (`_`)
-- Import the directory's `meta` before its `Layout`, and the `Layout` before its `Page`
+- Import the directory's `meta` first, then its `Layout`, then its `Error`, then its `Page` — the order their properties are emitted in
 - The module default-exports the route config array and constructs no router; the app passes it to `createBrowserRouter()`, `createMemoryRouter()`, or whichever router it prefers. Nothing is imported from `react-router`.
 
 Here's a block of code containing multiple examples:
@@ -132,6 +132,20 @@ Specs:
 - The metadata lands on the **directory's own route object**, not on the synthesized index child, so a `loader` runs for the segment and everything nested beneath it
 - `id` is emitted before `path`; `loader` after it, and both before `element`
 - A `meta` module is never checked for a `default` export
+
+## Error Boundaries
+
+A route directory may contain an `Error.{jsx|tsx}` component, which becomes the route's `errorElement`.
+
+Specs:
+
+- Resolved like `Page` and `Layout`: `.tsx` wins over `.jsx`, with a shadowing warning
+- Must have a `default` export that is a React component, checked the same way `Page` and `Layout` are
+- Its import name takes an `Error` suffix
+- The boundary lands on the **directory's own route object**, not on the synthesized index child, so it catches the route's `loader`, `Layout`, and `Page`, plus everything nested beneath it
+- `errorElement` is emitted after `element` and before `children`
+- The plugin ships no built-in boundary; a route with none above it falls through to `react-router`'s default error page
+- An `Error` component does not satisfy the leaf-most directory requirement
 
 ## Generation Use-Cases
 
@@ -646,6 +660,48 @@ export default [
         id: Users_Meta.id,
         path: 'users',
         loader: Users_Meta.loader,
+        children: [
+          {
+            index: true,
+            element: <Users_Page />,
+          },
+        ],
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ],
+  },
+]
+```
+
+### Route Error Boundary
+
+Files:
+
+- `/Page.tsx`
+- `/users/Page.tsx`
+- `/users/Error.tsx`
+
+Config:
+```jsx
+import NotFoundPage from '@src/plugin/404'
+import Page from './components/app/Page'
+import Users_Error from './components/app/users/Error'
+import Users_Page from './components/app/users/Page'
+
+export default [
+  {
+    path: '/',
+    children: [
+      {
+        index: true,
+        element: <Page />,
+      },
+      {
+        path: 'users',
+        errorElement: <Users_Error />,
         children: [
           {
             index: true,
