@@ -86,6 +86,20 @@ test('a route that does not throw renders normally', async () => {
   expect(screen.getByText('Users Index')).toBeTruthy()
 })
 
+// With no 404.{tsx,jsx} anywhere in the tree, not-found stops being a rendered
+// component and becomes a real 404 ErrorResponse for the nearest boundary.
+test('an unmatched URL reaches the boundary as a 404', async () => {
+  await renderAt('/nonsense')
+
+  expect(screen.getByText('Root boundary: 404 Not Found')).toBeTruthy()
+})
+
+test('a Page-less directory reaches the boundary as a 404', async () => {
+  await renderAt('/pageless')
+
+  expect(screen.getByText('Root boundary: 404 Not Found')).toBeTruthy()
+})
+
 test('the boundary lands on the route, never on its index child', async () => {
   const routes = await loadRoutes(server)
 

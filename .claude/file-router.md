@@ -76,11 +76,18 @@ Here's an example of a directory structure that should throw an error:
 
 ### Handling 404 Cases
 
-If the browser navigates to a route that maps to a valid directory with no `Page.{jsx|tsx}` inside of it, then the app attempts to render the `default` export from `src/components/app/404.{jsx|tsx}`, if it exists. If the app doesn't define `src/components/app/404.{jsx|tsx}`, then the `vite` plugin will provide its own default `404` component.
+A `404.{jsx|tsx}` is resolved per directory, like `Page`, `Layout`, and `Error`. Where one exists it becomes a catch-all (`path: '*'`) child of that route, so unmatched paths beneath the segment render it.
+
+Specs:
+
+- The nearest 404 wins: a deeper one beats a shallower one, and a directory without its own falls through to the closest ancestor's
+- Its import name takes a `NotFound` suffix, since `404` does not parse as an identifier
+- A directory with no `Page` renders whichever 404 governs it through its index child, because a splat never matches an empty remainder
+- With no 404 at or above it, a `Page`-less directory instead throws `new Response(null, { status: 404, statusText: 'Not Found' })`, matching what `react-router` synthesizes for a genuine no-match, so an `Error.{jsx|tsx}` boundary handles both alike
+- The plugin ships no built-in 404
+- A `404` component does not satisfy the leaf-most directory requirement
 
 So, if the current app URI is: `/users/123` then the router will render `src/components/app/users/$userId/Page.{jsx|tsx}` if it exists, and it'd render it inside of any matched `Layout` components that may exist.
-
-The `vite` plugin will come with its own `404.jsx`
 
 ## Layout Component Resolution
 

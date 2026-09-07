@@ -30,7 +30,6 @@
     "./client": {
       "types": "./dist/client.d.ts"
     },
-    "./404": "./dist/404.jsx",
     "./package.json": "./package.json"
   },
   "repository": {
@@ -39,7 +38,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/plugin/404.jsx src/plugin/client.d.ts dist/",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/plugin/client.d.ts dist/",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

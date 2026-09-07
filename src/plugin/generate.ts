@@ -1,8 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { importName, isDynamicSegment } from './naming.ts'
-import { scan, type RouteNode, type RouteTree } from './scan.ts'
+import { scan, walk, type RouteNode, type RouteTree } from './scan.ts'
 import { validate } from './validate.ts'
 
 // Split only to fit the line limit. The joined text is asserted verbatim in
@@ -13,8 +12,24 @@ const BANNER =
 
 const INDENT = '  '
 
-/** The 404 shipped with the plugin, used when the app doesn't define one. */
-const BUILT_IN_NOT_FOUND = fileURLToPath(new URL('./404.jsx', import.meta.url))
+/**
+ * Emitted where a Page-less directory has no `404` governing it. The status
+ * text matches what react-router synthesizes for a genuine no-match, so a
+ * boundary can't tell the two apart.
+ *
+ * `notFound` cannot collide with a generated import: `importName` returns one
+ * of its literal kinds or `${prefix}_${kind}`, and every prefix starts with an
+ * uppercase letter or `_`.
+ */
+const THROW_HELPER = [
+  '/** Thrown where a Page-less directory has no 404 governing it. */',
+  'const notFound = () => {',
+  '  throw new Response(null, {',
+  '    status: 404,',
+  "    statusText: 'Not Found',",
+  '  })',
+  '}',
+]
 
 /**
  * Import specifier for `target`.
@@ -46,7 +61,8 @@ type Import = {
 function collectImports (node: RouteNode, fromDir?: string): Import[] {
   const own: Import[] = []
 
-  // Meta, Layout, Error, Page — the order their properties are emitted in.
+  // Meta, Layout, Error, Page, NotFound — the order their properties are
+  // emitted in; the splat is the last child.
   if (node.meta) {
     own.push({
       name: importName(node.segments, 'Meta'),
@@ -76,6 +92,13 @@ function collectImports (node: RouteNode, fromDir?: string): Import[] {
     })
   }
 
+  if (node.notFound) {
+    own.push({
+      name: importName(node.segments, 'NotFound'),
+      from: specifier(node.notFound, fromDir),
+    })
+  }
+
   const nested = node.children.flatMap(
     (child) => collectImports(child, fromDir),
   )
@@ -95,9 +118,14 @@ function routeSegment (segment: string): string {
 /**
  * Emits one route object.
  *
- * Every node gets an index child: its own Page when it has one, otherwise the
- * 404 — a directory that exists but renders nothing would otherwise leave a
- * blank page, since the root splat can't match a path a real route claimed.
+ * A directory's own `404` becomes a splat child, so unmatched paths under that
+ * segment render it and deeper ones win over shallower — the same nesting
+ * react-router gives a hand-written config.
+ *
+ * Every node also gets an index child, because a splat never matches an empty
+ * remainder: without one, a Page-less directory visited at its own path would
+ * render an empty `<Outlet />`. It shows the same 404 that governs the segment,
+ * so `/users` and `/users/deep` agree.
  *
  * A directory's `meta` and `Error` land on this object rather than on the index
  * child, so its loader runs — and its boundary catches — for everything nested
@@ -107,10 +135,18 @@ function renderRoute (
   node: RouteNode,
   depth: number,
   isRoot: boolean,
+  inherited?: string,
 ): string[] {
   const lines: string[] = [line(depth, '{')]
   const body = depth + 1
   const meta = node.meta ? importName(node.segments, 'Meta') : ''
+
+  const own = node.notFound
+    ? importName(node.segments, 'NotFound')
+    : undefined
+
+  // Nearest wins: the directory's own 404, else whatever covers it from above.
+  const governing = own ?? inherited
 
   // `id` leads: it names the route, before `path` matches it.
   if (node.meta?.exports.id) lines.push(line(body, `id: ${meta}.id,`))
@@ -135,29 +171,32 @@ function renderRoute (
     lines.push(line(body, `errorElement: <${boundary} />,`))
   }
 
-  lines.push(line(body, 'children: ['))
+  lines.push(line(body, 'children: ['), line(body + 1, '{'))
+  lines.push(line(body + 2, 'index: true,'))
 
-  const indexElement = node.page
-    ? `<${importName(node.segments, 'Page')} />`
-    : '<NotFoundPage />'
+  if (node.page) {
+    const page = importName(node.segments, 'Page')
 
-  lines.push(
-    line(body + 1, '{'),
-    line(body + 2, 'index: true,'),
-    line(body + 2, `element: ${indexElement},`),
-    line(body + 1, '},'),
-  )
-
-  for (const child of node.children) {
-    lines.push(...renderRoute(child, body + 1, false))
+    lines.push(line(body + 2, `element: <${page} />,`))
+  } else if (governing) {
+    lines.push(line(body + 2, `element: <${governing} />,`))
+  } else {
+    // Nothing renders this path, so make it a real 404 for the boundary.
+    lines.push(line(body + 2, 'loader: notFound,'))
   }
 
-  // Anything that matches no route directory at all lands here.
-  if (isRoot) {
+  lines.push(line(body + 1, '},'))
+
+  for (const child of node.children) {
+    lines.push(...renderRoute(child, body + 1, false, governing))
+  }
+
+  // Unmatched paths beneath this segment, when it defines its own 404.
+  if (own) {
     lines.push(
       line(body + 1, '{'),
       line(body + 2, "path: '*',"),
-      line(body + 2, 'element: <NotFoundPage />,'),
+      line(body + 2, `element: <${own} />,`),
       line(body + 1, '},'),
     )
   }
@@ -178,13 +217,7 @@ function renderRoute (
  * relative. Omit it for the virtual module, which has no directory.
  */
 export function generate (tree: RouteTree, fromDir?: string): string {
-  const imports: Import[] = [
-    {
-      name: 'NotFoundPage',
-      from: specifier(tree.notFound ?? BUILT_IN_NOT_FOUND, fromDir),
-    },
-    ...collectImports(tree.root, fromDir),
-  ]
+  const imports = collectImports(tree.root, fromDir)
 
   return [
     BANNER,
@@ -194,11 +227,21 @@ export function generate (tree: RouteTree, fromDir?: string): string {
       return `import ${binding} from '${from}'`
     }),
     '',
+    ...(needsThrowHelper(tree.root, false) ? [...THROW_HELPER, ''] : []),
     'export default [',
     ...renderRoute(tree.root, 1, true),
     ']',
     '',
   ].join('\n')
+}
+
+/** True when some Page-less directory has no `404` at or above it. */
+function needsThrowHelper (node: RouteNode, governed: boolean): boolean {
+  const covered = governed || Boolean(node.notFound)
+
+  if (!node.page && !covered) return true
+
+  return node.children.some((child) => needsThrowHelper(child, covered))
 }
 
 export type GenerateOptions = {

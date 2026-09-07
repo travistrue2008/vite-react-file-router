@@ -6,8 +6,8 @@
 // extensions to satisfy Vite's native config loader, and this rewrites them to
 // `.js` on the way out.
 //
-// `404.jsx` and `client.d.ts` are not emitted by tsc — the build script copies
-// them verbatim. See the `build` script.
+// `client.d.ts` is not emitted by tsc — the build script copies it verbatim.
+// See the `build` script.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {

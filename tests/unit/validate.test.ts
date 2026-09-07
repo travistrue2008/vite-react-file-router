@@ -178,14 +178,15 @@ describe('default export validation', () => {
     )
   })
 
-  test('validates the app 404 too', () => {
+  test('validates a 404 anywhere in the tree', () => {
     expect(
       errorFor({
         'Page.tsx': PAGE_SOURCE,
-        '404.tsx': 'export default 42',
+        'users/Page.tsx': PAGE_SOURCE,
+        'users/404.tsx': 'export default 42',
       }),
     ).toBe(
-      '[Error] src/components/app/404.tsx: ' +
+      '[Error] src/components/app/users/404.tsx: ' +
         '`default` export is not a valid React component',
     )
   })
@@ -346,6 +347,42 @@ describe('error boundaries', () => {
       errorFor({
         'Page.tsx': PAGE_SOURCE,
         'orders/Error.tsx': ERROR_SOURCE,
+      }),
+    ).toBe('[Error] src/components/app/orders: Page.{jsx|tsx} not found')
+  })
+})
+
+describe('not found', () => {
+  test('a 404 alongside a Page is valid at any depth', () => {
+    expect(
+      errorFor({
+        '404.tsx': PAGE_SOURCE,
+        'Page.tsx': PAGE_SOURCE,
+        'users/404.tsx': PAGE_SOURCE,
+        'users/Page.tsx': PAGE_SOURCE,
+      }),
+    ).toBe('')
+  })
+
+  test('two spellings of the same segment collide', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'blog/last-week/Page.tsx': PAGE_SOURCE,
+        'blog/last-week/404.tsx': PAGE_SOURCE,
+        'blog/lastWeek/Page.tsx': PAGE_SOURCE,
+        'blog/lastWeek/404.tsx': PAGE_SOURCE,
+      }),
+    ).toContain('[Error] duplicate import name `Blog_LastWeek_NotFound`')
+  })
+
+  // Its splat only covers paths *beneath* the segment, so a leaf holding one
+  // is a route that exists solely to 404 — far likelier a mistake than intent.
+  test('a 404 does not satisfy the leaf rule', () => {
+    expect(
+      errorFor({
+        'Page.tsx': PAGE_SOURCE,
+        'orders/404.tsx': PAGE_SOURCE,
       }),
     ).toBe('[Error] src/components/app/orders: Page.{jsx|tsx} not found')
   })

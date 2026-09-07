@@ -98,13 +98,3 @@ export function withFixture<T> (files: Files, run: (fixture: Fixture) => T): T {
   }
 }
 
-/**
- * Replaces the plugin's own 404 import, whose path is relative to wherever the
- * repo happens to live, with a stable token.
- */
-export function stabilize (source: string): string {
-  return source.replace(
-    /^import NotFoundPage from '.*\/plugin\/404'$/m,
-    "import NotFoundPage from '<built-in-404>'",
-  )
-}

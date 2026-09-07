@@ -31,7 +31,7 @@ bun test           # unit + generation + integration suites
 bun run typecheck  # tsc --noEmit
 bun run lint       # eslint .
 bun run lint:fix   # eslint . --fix
-bun run build      # the published library: tsc → dist/, then copies 404.jsx + client.d.ts
+bun run build      # the published library: tsc → dist/, then copies client.d.ts
 ```
 
 ESLint is the only style authority — there is no Prettier, and the formatting is enforced by
@@ -61,13 +61,12 @@ tree would make it retrigger itself.
 | Module | Responsibility |
 | --- | --- |
 | `index.ts` | Plugin hooks, virtual module, watcher, debounce. |
-| `scan.ts` | Directory tree → `RouteTree`; recognizes `Layout`, `Error`, `Page`, `meta`, root `404`. |
+| `scan.ts` | Directory tree → `RouteTree`; recognizes `Layout`, `Error`, `Page`, `404`, `meta`. |
 | `validate.ts` | Leaf-`Page` rule, import-name collisions, `default` and `meta` export checks. |
 | `naming.ts` | Segment → import identifier. |
 | `generate.ts` | `RouteTree` → module source; path resolution; debug-file writing. |
 | `parse.ts` | Rolldown AST plumbing shared by `scan.ts` and `validate.ts`. |
 | `meta.ts` | `meta.{ts,js}` → which of `id` / `loader` a route object gets. |
-| `404.jsx` | Built-in fallback, used when the app defines no `404.{tsx,jsx}`. |
 
 Load-bearing details:
 
@@ -120,8 +119,8 @@ in `vite.config.ts`.
 | `tests/integration/<case>/integration.test.tsx` | A real Vite dev server over a fixture app. |
 
 - Generation fixtures are built in temp directories via `withFixture` in `tests/helpers.ts`, because
-  several cases hinge on *empty* directories, which git cannot track. Use `stabilize()` when
-  snapshotting output that contains the built-in 404's absolute path.
+  several cases hinge on *empty* directories, which git cannot track. Snapshots are stable as-is:
+  every emitted import points at a file the fixture owns, so no path normalization is needed.
 - Integration fixtures are **checked in** under `tests/integration/<case>/src/` so bare specifiers
   like `react-router` resolve. Each case gets its own directory with one `integration.test.tsx`;
   `tests/integration/server.ts` boots the server and loads the virtual module.

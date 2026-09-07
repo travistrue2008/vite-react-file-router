@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `404.{tsx,jsx}` is now resolved per route directory, like `Page`, `Layout`,
+  and `Error`, instead of once at the root of `inputPath`. Each one becomes a
+  catch-all (`path: '*'`) child of its own route, so an unmatched path renders
+  the nearest 404 above it and a section can have its own. A `Page`-less
+  directory renders whichever 404 governs it, so `/users` and `/users/deep`
+  agree. A single `404.{tsx,jsx}` at the root of `inputPath` still covers the
+  whole app exactly as it did before.
+
+### Removed
+
+- **Breaking:** the built-in 404 component and the `vite-react-file-router/404`
+  package export. Not-found UI now comes from the app's own `404.{tsx,jsx}`
+  files, or from an `Error.{tsx,jsx}` boundary narrowing on
+  `error.status === 404`. Consequently, with no `404.{tsx,jsx}` at or above it,
+  an unmatched path raises `react-router`'s own 404 `ErrorResponse` for the
+  nearest boundary rather than rendering a component, and a `Page`-less
+  directory throws the same response. Apps that define `404.{tsx,jsx}` at the
+  root of `inputPath` are unaffected.
+
 ## [0.4.0] - 2026-08-19
 
 ### Added

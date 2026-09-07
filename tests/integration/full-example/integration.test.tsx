@@ -52,7 +52,7 @@ test('resolves a dynamic segment into useParams', async () => {
   expect(screen.getByText('Users Layout')).toBeTruthy()
 })
 
-test('an unmatched URL falls through to the built-in 404', async () => {
+test("an unmatched URL falls through to the app's 404", async () => {
   await renderAt('/nonsense')
 
   expect(screen.getByText('404 - Not Found')).toBeTruthy()
