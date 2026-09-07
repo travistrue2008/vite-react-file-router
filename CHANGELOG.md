@@ -5,9 +5,9 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
 
-## [0.5.0] - 2026-09-07
+## [0.5.0](https://www.npmjs.com/package/vite-react-file-router/v/0.5.0) - 2026-09-07
 
 ### Added
 
@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   directory throws the same response. Apps that define `404.{tsx,jsx}` at the
   root of `inputPath` are unaffected.
 
-## [0.4.0] - 2026-08-19
+## [0.4.0](https://www.npmjs.com/package/vite-react-file-router/v/0.4.0) - 2026-08-19
 
 ### Added
 
@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editing a `meta` file's contents regenerates the routes, since which of `id`
   and `loader` it exports decides what the route object contains.
 
-## [0.3.0] - 2026-08-19
+## [0.3.0](https://www.npmjs.com/package/vite-react-file-router/v/0.3.0) - 2026-08-19
 
 ### Changed
 
@@ -64,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   at all, so the config works with any router — memory, static, hash,
   `useRoutes` — and with Storybook's react-router addon.
 
-## [0.2.0] - 2026-08-14
+## [0.2.0](https://www.npmjs.com/package/vite-react-file-router/v/0.2.0) - 2026-08-14
 
 ### Changed
 
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `users/$userId`), matching the convention used by frameworks like Remix.
   `react-router`'s own path syntax is unchanged and still uses `:userId`.
 
-## [0.1.0] - 2026-08-12
+## [0.1.0](https://www.npmjs.com/package/vite-react-file-router/v/0.1.0) - 2026-08-12
 
 ### Added
 
@@ -90,10 +90,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   component edits, and keeps serving the last good routes when validation fails.
 - `outputPath` option that writes the same routes to disk as a debug artifact.
 - `client` types entry declaring the virtual module for TypeScript.
-
-[0.1.0]: https://github.com/travistrue2008/vite-react-file-router/releases/tag/0.1.0
-[0.2.0]: https://github.com/travistrue2008/vite-react-file-router/compare/0.1.0...0.2.0
-[0.3.0]: https://github.com/travistrue2008/vite-react-file-router/compare/0.2.0...0.3.0
-[0.4.0]: https://github.com/travistrue2008/vite-react-file-router/compare/0.3.0...0.4.0
-[Unreleased]: https://github.com/travistrue2008/vite-react-file-router/compare/0.5.0...HEAD
-[0.5.0]: https://github.com/travistrue2008/vite-react-file-router/compare/0.4.0...0.5.0
