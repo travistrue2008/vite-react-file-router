@@ -76,11 +76,18 @@ Here's an example of a directory structure that should throw an error:
 
 ### Handling 404 Cases
 
-If the browser navigates to a route that maps to a valid directory with no `Page.{jsx|tsx}` inside of it, then the app attempts to render the `default` export from `src/components/app/404.{jsx|tsx}`, if it exists. If the app doesn't define `src/components/app/404.{jsx|tsx}`, then the `vite` plugin will provide its own default `404` component.
+A `404.{jsx|tsx}` is resolved per directory, like `Page`, `Layout`, and `Error`. Where one exists it becomes a catch-all (`path: '*'`) child of that route, so unmatched paths beneath the segment render it.
+
+Specs:
+
+- The nearest 404 wins: a deeper one beats a shallower one, and a directory without its own falls through to the closest ancestor's
+- Its import name takes a `NotFound` suffix, since `404` does not parse as an identifier
+- A directory with no `Page` renders whichever 404 governs it through its index child, because a splat never matches an empty remainder
+- With no 404 at or above it, a `Page`-less directory instead throws `new Response(null, { status: 404, statusText: 'Not Found' })`, matching what `react-router` synthesizes for a genuine no-match, so an `Error.{jsx|tsx}` boundary handles both alike
+- The plugin ships no built-in 404
+- A `404` component does not satisfy the leaf-most directory requirement
 
 So, if the current app URI is: `/users/123` then the router will render `src/components/app/users/$userId/Page.{jsx|tsx}` if it exists, and it'd render it inside of any matched `Layout` components that may exist.
-
-The `vite` plugin will come with its own `404.jsx`
 
 ## Layout Component Resolution
 
@@ -96,7 +103,7 @@ Here are some specs on how to generate code:
   - Convert each directory name into `PascalCase`
   - Replace the path's slashes with underscores (`_`)
   - Directories representing dynamic route params replace their starting with a dollar sign (`$`) with an underscore (`_`)
-- Import the directory's `meta` before its `Layout`, and the `Layout` before its `Page`
+- Import the directory's `meta` first, then its `Layout`, then its `Error`, then its `Page` — the order their properties are emitted in
 - The module default-exports the route config array and constructs no router; the app passes it to `createBrowserRouter()`, `createMemoryRouter()`, or whichever router it prefers. Nothing is imported from `react-router`.
 
 Here's a block of code containing multiple examples:
@@ -132,6 +139,20 @@ Specs:
 - The metadata lands on the **directory's own route object**, not on the synthesized index child, so a `loader` runs for the segment and everything nested beneath it
 - `id` is emitted before `path`; `loader` after it, and both before `element`
 - A `meta` module is never checked for a `default` export
+
+## Error Boundaries
+
+A route directory may contain an `Error.{jsx|tsx}` component, which becomes the route's `errorElement`.
+
+Specs:
+
+- Resolved like `Page` and `Layout`: `.tsx` wins over `.jsx`, with a shadowing warning
+- Must have a `default` export that is a React component, checked the same way `Page` and `Layout` are
+- Its import name takes an `Error` suffix
+- The boundary lands on the **directory's own route object**, not on the synthesized index child, so it catches the route's `loader`, `Layout`, and `Page`, plus everything nested beneath it
+- `errorElement` is emitted after `element` and before `children`
+- The plugin ships no built-in boundary; a route with none above it falls through to `react-router`'s default error page
+- An `Error` component does not satisfy the leaf-most directory requirement
 
 ## Generation Use-Cases
 
@@ -646,6 +667,48 @@ export default [
         id: Users_Meta.id,
         path: 'users',
         loader: Users_Meta.loader,
+        children: [
+          {
+            index: true,
+            element: <Users_Page />,
+          },
+        ],
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ],
+  },
+]
+```
+
+### Route Error Boundary
+
+Files:
+
+- `/Page.tsx`
+- `/users/Page.tsx`
+- `/users/Error.tsx`
+
+Config:
+```jsx
+import NotFoundPage from '@src/plugin/404'
+import Page from './components/app/Page'
+import Users_Error from './components/app/users/Error'
+import Users_Page from './components/app/users/Page'
+
+export default [
+  {
+    path: '/',
+    children: [
+      {
+        index: true,
+        element: <Page />,
+      },
+      {
+        path: 'users',
+        errorElement: <Users_Error />,
         children: [
           {
             index: true,

@@ -117,8 +117,8 @@ const styleRules = {
 export default [
   { ignores },
   {
-    // espree, unlike the TS parser, needs to be told about JSX. 404.jsx is the
-    // only source file that reaches this block.
+    // espree, unlike the TS parser, needs to be told about JSX. No source file
+    // reaches this block today; it covers config and any future plain JS.
     files: ['**/*.{js,mjs,cjs,jsx}'],
     languageOptions: {
       parserOptions: {

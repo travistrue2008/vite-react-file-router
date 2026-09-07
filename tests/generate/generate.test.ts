@@ -15,24 +15,16 @@ import {
 } from '../../src/plugin/generate'
 import { scan } from '../../src/plugin/scan'
 import { validate } from '../../src/plugin/validate'
-import {
-  type Files,
-  PAGE_SOURCE,
-  stabilize,
-  withFixture,
-} from '../helpers'
+import { type Files, PAGE_SOURCE, withFixture } from '../helpers'
 
-/**
- * Scan + validate + generate in file mode (relative imports), with the built-in
- * 404 path made stable.
- */
+/** Scan + validate + generate in file mode, with relative imports. */
 function sourceFor (files: Files): string {
   return withFixture(files, ({ root, inputDir, outputFile }) => {
     const tree = scan(inputDir)
 
     validate(tree, root)
 
-    return stabilize(generate(tree, dirname(outputFile)))
+    return generate(tree, dirname(outputFile))
   })
 }
 
@@ -71,7 +63,6 @@ describe('use-cases that generate', () => {
   test('Root (Page-Only)', () => {
     expect(sourceFor(['Page.tsx'])).toBe(
       `${HEADER}
-import NotFoundPage from '<built-in-404>'
 import Page from './components/app/Page'
 
 export default [
@@ -81,10 +72,6 @@ export default [
       {
         index: true,
         element: <Page />,
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
       },
     ],
   },
@@ -96,7 +83,6 @@ export default [
   test('Root (Page and Layout)', () => {
     expect(sourceFor(['Layout.tsx', 'Page.tsx'])).toBe(
       `${HEADER}
-import NotFoundPage from '<built-in-404>'
 import Layout from './components/app/Layout'
 import Page from './components/app/Page'
 
@@ -109,10 +95,6 @@ export default [
         index: true,
         element: <Page />,
       },
-      {
-        path: '*',
-        element: <NotFoundPage />,
-      },
     ],
   },
 ]
@@ -120,19 +102,33 @@ export default [
     )
   })
 
-  test('User-Defined 404 Component replaces the built-in', () => {
+  test('User-Defined 404 Component becomes the root catch-all', () => {
     const source = sourceFor(['404.tsx', 'Page.tsx'])
 
-    expect(source).toContain("import NotFoundPage from './components/app/404'")
-    expect(source).not.toContain('<built-in-404>')
+    expect(source).toContain("import NotFound from './components/app/404'")
+
+    expect(source).toContain(`      {
+        path: '*',
+        element: <NotFound />,
+      },`)
+
+    // Nothing is thrown: the root 404 governs every path beneath it.
+    expect(source).not.toContain('notFound')
   })
 
   // The root has no Page, so `/` renders the 404 rather than a blank page.
   test('Sub-Route (Page-Only)', () => {
     expect(sourceFor(['users/Page.tsx'])).toBe(
       `${HEADER}
-import NotFoundPage from '<built-in-404>'
 import Users_Page from './components/app/users/Page'
+
+/** Thrown where a Page-less directory has no 404 governing it. */
+const notFound = () => {
+  throw new Response(null, {
+    status: 404,
+    statusText: 'Not Found',
+  })
+}
 
 export default [
   {
@@ -140,7 +136,7 @@ export default [
     children: [
       {
         index: true,
-        element: <NotFoundPage />,
+        loader: notFound,
       },
       {
         path: 'users',
@@ -150,10 +146,6 @@ export default [
             element: <Users_Page />,
           },
         ],
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
       },
     ],
   },
@@ -165,9 +157,16 @@ export default [
   test('Sub-Route (Page and Layout)', () => {
     expect(sourceFor(['users/Layout.tsx', 'users/Page.tsx'])).toBe(
       `${HEADER}
-import NotFoundPage from '<built-in-404>'
 import Users_Layout from './components/app/users/Layout'
 import Users_Page from './components/app/users/Page'
+
+/** Thrown where a Page-less directory has no 404 governing it. */
+const notFound = () => {
+  throw new Response(null, {
+    status: 404,
+    statusText: 'Not Found',
+  })
+}
 
 export default [
   {
@@ -175,7 +174,7 @@ export default [
     children: [
       {
         index: true,
-        element: <NotFoundPage />,
+        loader: notFound,
       },
       {
         path: 'users',
@@ -186,10 +185,6 @@ export default [
             element: <Users_Page />,
           },
         ],
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
       },
     ],
   },
@@ -216,8 +211,15 @@ export default [
   test('Nested Route (Page-Only)', () => {
     expect(sourceFor(['users/$userId/Page.tsx'])).toBe(
       `${HEADER}
-import NotFoundPage from '<built-in-404>'
 import Users__UserId_Page from './components/app/users/$userId/Page'
+
+/** Thrown where a Page-less directory has no 404 governing it. */
+const notFound = () => {
+  throw new Response(null, {
+    status: 404,
+    statusText: 'Not Found',
+  })
+}
 
 export default [
   {
@@ -225,14 +227,14 @@ export default [
     children: [
       {
         index: true,
-        element: <NotFoundPage />,
+        loader: notFound,
       },
       {
         path: 'users',
         children: [
           {
             index: true,
-            element: <NotFoundPage />,
+            loader: notFound,
           },
           {
             path: ':userId',
@@ -244,10 +246,6 @@ export default [
             ],
           },
         ],
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
       },
     ],
   },
@@ -280,9 +278,10 @@ export default [
       'users/$userId/Page.tsx',
     ])
 
-    // `/users` has a Page now, so the only 404s are the root index and the
-    // splat.
-    expect(source.match(/element: <NotFoundPage \/>/g)).toHaveLength(2)
+    // `/users` has a Page now, so the root index is the only path with
+    // nothing to render — and with no 404 file anywhere, it throws.
+    expect(source.match(/loader: notFound,/g)).toHaveLength(1)
+    expect(source).not.toContain("path: '*'")
 
     expect(source).toContain(`          {
             index: true,
@@ -302,7 +301,6 @@ export default [
       ]),
     ).toBe(
       `${HEADER}
-import NotFoundPage from '<built-in-404>'
 import Layout from './components/app/Layout'
 import Page from './components/app/Page'
 import Users_Layout from './components/app/users/Layout'
@@ -339,10 +337,6 @@ export default [
           },
         ],
       },
-      {
-        path: '*',
-        element: <NotFoundPage />,
-      },
     ],
   },
 ]
@@ -361,8 +355,19 @@ export default [
     expect(source.indexOf('photos')).toBeLessThan(source.indexOf('users'))
   })
 
+  // Every recognized file is present, because this is what keeps the config
+  // router-agnostic — an Error boundary reads its error with useRouteError()
+  // rather than through a wrapper the generator would have to import.
   test('the config is the default export, with no router construction', () => {
-    const source = sourceFor(['Page.tsx'])
+    const source = sourceFor([
+      'Layout.tsx',
+      'Error.tsx',
+      'Page.tsx',
+      'meta.ts',
+      'users/Page.tsx',
+      'users/Error.tsx',
+      'users/meta.ts',
+    ])
 
     expect(source).toContain('export default [')
     expect(source).not.toContain('createBrowserRouter')
@@ -379,8 +384,8 @@ export default [
 
     expect(source).not.toContain('helper')
     expect(source).not.toContain('styles')
-    // NotFoundPage + Page; the config imports nothing from react-router.
-    expect(source.match(/^import /gm)).toHaveLength(2)
+    // Just Page; the config imports nothing it did not find on disk.
+    expect(source.match(/^import /gm)).toHaveLength(1)
   })
 })
 
@@ -411,7 +416,6 @@ describe('route metadata', () => {
   test('a root meta lands on the root route object', () => {
     expect(sourceFor(['Page.tsx', 'meta.ts'])).toBe(
       `${HEADER}
-import NotFoundPage from '<built-in-404>'
 import * as Meta from './components/app/meta'
 import Page from './components/app/Page'
 
@@ -424,10 +428,6 @@ export default [
       {
         index: true,
         element: <Page />,
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
       },
     ],
   },
@@ -523,8 +523,212 @@ export default [
         children: [
           {
             index: true,
-            element: <NotFoundPage />,
+            loader: notFound,
           },`)
+  })
+})
+
+describe('error boundaries', () => {
+  test('a root Error boundary lands on the root route object', () => {
+    expect(sourceFor(['Error.tsx', 'Page.tsx'])).toBe(
+      `${HEADER}
+import Error from './components/app/Error'
+import Page from './components/app/Page'
+
+export default [
+  {
+    path: '/',
+    errorElement: <Error />,
+    children: [
+      {
+        index: true,
+        element: <Page />,
+      },
+    ],
+  },
+]
+`,
+    )
+  })
+
+  // `element` renders the route, `errorElement` replaces it when something
+  // under it throws, so they sit together above `children`.
+  test('errorElement follows element, ahead of children', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/Layout.tsx',
+      'users/Page.tsx',
+      'users/Error.tsx',
+      'users/meta.ts',
+    ])
+
+    expect(source).toContain(
+      "import * as Users_Meta from './components/app/users/meta'\n" +
+        "import Users_Layout from './components/app/users/Layout'\n" +
+        "import Users_Error from './components/app/users/Error'\n" +
+        "import Users_Page from './components/app/users/Page'",
+    )
+
+    expect(source).toContain(`      {
+        id: Users_Meta.id,
+        path: 'users',
+        loader: Users_Meta.loader,
+        element: <Users_Layout />,
+        errorElement: <Users_Error />,
+        children: [`)
+  })
+
+  // The boundary belongs to the directory's own route, not to the index child
+  // that renders its Page — that is what lets it catch nested routes too.
+  test('the index child never carries the boundary', () => {
+    const source = sourceFor(['Page.tsx', 'users/Page.tsx', 'users/Error.tsx'])
+
+    expect(source).toContain(`          {
+            index: true,
+            element: <Users_Page />,
+          },`)
+
+    expect(source.match(/errorElement:/g)).toHaveLength(1)
+  })
+
+  test('a Page-less parent directory still takes its boundary', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/Error.tsx',
+      'users/$userId/Page.tsx',
+    ])
+
+    expect(source).toContain(`      {
+        path: 'users',
+        errorElement: <Users_Error />,
+        children: [
+          {
+            index: true,
+            loader: notFound,
+          },`)
+  })
+
+  test('a dynamic segment names its boundary like any other file', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/$userId/Page.tsx',
+      'users/$userId/Error.tsx',
+    ])
+
+    expect(source).toContain(
+      'import Users__UserId_Error from ' +
+        "'./components/app/users/$userId/Error'",
+    )
+
+    expect(source).toContain('errorElement: <Users__UserId_Error />,')
+  })
+
+  test('a directory without one emits no errorElement', () => {
+    expect(sourceFor(['Page.tsx', 'users/Page.tsx'])).not.toContain(
+      'errorElement',
+    )
+  })
+})
+
+describe('not found', () => {
+  test('a nested 404 emits its own splat, and the root keeps one', () => {
+    const source = sourceFor([
+      '404.tsx',
+      'Page.tsx',
+      'users/404.tsx',
+      'users/Page.tsx',
+    ])
+
+    expect(source).toContain("import NotFound from './components/app/404'")
+
+    expect(source).toContain(
+      "import Users_NotFound from './components/app/users/404'",
+    )
+
+    // The deeper splat sits inside `users`; the root's stays at the top level.
+    expect(source).toContain(`          {
+            path: '*',
+            element: <Users_NotFound />,
+          },`)
+
+    expect(source).toContain(`      {
+        path: '*',
+        element: <NotFound />,
+      },`)
+  })
+
+  test('a directory without its own 404 emits no splat', () => {
+    const source = sourceFor(['404.tsx', 'Page.tsx', 'orders/Page.tsx'])
+
+    // Only the root's. `/orders/nope` falls through to it by ranking.
+    expect(source.match(/path: '\*',/g)).toHaveLength(1)
+  })
+
+  // `/users` and `/users/deep` are governed by the same 404, so they render
+  // the same component — one through the index child, one through the splat.
+  test('a Page-less directory renders the 404 that governs it', () => {
+    const source = sourceFor([
+      '404.tsx',
+      'Page.tsx',
+      'users/$userId/Page.tsx',
+    ])
+
+    expect(source).toContain(`      {
+        path: 'users',
+        children: [
+          {
+            index: true,
+            element: <NotFound />,
+          },`)
+
+    expect(source).not.toContain('notFound')
+  })
+
+  test('its own 404 wins over an ancestor for the index child', () => {
+    const source = sourceFor([
+      '404.tsx',
+      'Page.tsx',
+      'users/404.tsx',
+      'users/$userId/Page.tsx',
+    ])
+
+    expect(source).toContain(`          {
+            index: true,
+            element: <Users_NotFound />,
+          },`)
+  })
+
+  test('the throw helper is emitted once, however many need it', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/$userId/Page.tsx',
+      'orders/$orderId/Page.tsx',
+    ])
+
+    expect(source.match(/const notFound = /g)).toHaveLength(1)
+    expect(source.match(/loader: notFound,/g)).toHaveLength(2)
+    expect(source).not.toContain("path: '*'")
+  })
+
+  test('no helper is emitted when a 404 covers everything', () => {
+    const source = sourceFor(['404.tsx', 'Page.tsx', 'users/$userId/Page.tsx'])
+
+    expect(source).not.toContain('const notFound')
+  })
+
+  test('a dynamic segment names its 404 like any other file', () => {
+    const source = sourceFor([
+      'Page.tsx',
+      'users/$userId/404.tsx',
+      'users/$userId/Page.tsx',
+    ])
+
+    expect(source).toContain(
+      'import Users__UserId_NotFound from ' +
+        "'./components/app/users/$userId/404'",
+    )
+
+    expect(source).toContain('element: <Users__UserId_NotFound />,')
   })
 })
 
@@ -575,8 +779,10 @@ describe('virtual vs file rendering', () => {
     const files = [
       'Layout.tsx',
       'Page.tsx',
+      'Error.tsx',
       'meta.ts',
       'users/$userId/Page.tsx',
+      'users/$userId/Error.tsx',
       'users/$userId/meta.ts',
     ]
 

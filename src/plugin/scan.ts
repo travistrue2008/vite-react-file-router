@@ -15,10 +15,14 @@ export type RouteNode = {
   segments: string[]
   /** Absolute path to the directory. */
   dirPath: string
-  /** Absolute path to `Page.{tsx,jsx}`, if present. */
-  page?: string
   /** Absolute path to `Layout.{tsx,jsx}`, if present. */
   layout?: string
+  /** Absolute path to `Error.{tsx,jsx}`, if present. */
+  error?: string
+  /** Absolute path to `Page.{tsx,jsx}`, if present. */
+  page?: string
+  /** Absolute path to `404.{tsx,jsx}`, if present. */
+  notFound?: string
   /** `meta.{ts,js}` and the route properties it contributes, if present. */
   meta?: RouteMeta
   children: RouteNode[]
@@ -26,8 +30,6 @@ export type RouteNode = {
 
 export type RouteTree = {
   root: RouteNode
-  /** Absolute path to the app's own `404.{tsx,jsx}`, if it defines one. */
-  notFound?: string
 }
 
 /**
@@ -53,7 +55,7 @@ function resolveFile (
   return found[0]
 }
 
-/** Resolves `Page` / `Layout` / `404`, preferring `.tsx`. */
+/** Resolves `Layout` / `Error` / `Page` / `404`, preferring `.tsx`. */
 function resolveComponent (dirPath: string, base: string): string | undefined {
   return resolveFile(dirPath, base, COMPONENT_EXTENSIONS)
 }
@@ -94,6 +96,8 @@ function scanDirectory (
     dirPath,
     page: resolveComponent(dirPath, 'Page'),
     layout: resolveComponent(dirPath, 'Layout'),
+    error: resolveComponent(dirPath, 'Error'),
+    notFound: resolveComponent(dirPath, '404'),
     meta: resolveMeta(dirPath),
     children,
   }
@@ -111,8 +115,6 @@ export function scan (inputDir: string): RouteTree {
 
   return {
     root: scanDirectory(inputDir, [], ''),
-    // The app's 404 lives at the root of inputPath and is not itself a route.
-    notFound: resolveComponent(inputDir, '404'),
   }
 }
 
